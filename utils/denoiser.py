@@ -37,6 +37,10 @@ class ModelTimestepUniformDenoiser(Denoiser):
     in order to undo noise from a batch of images for a number of desired 
     timesteps thus denoising them.
     """
+
+    model: UNetModel
+    diffusion: GaussianDiffusion
+
     def __init__(self, model: UNetModel, diffusion: GaussianDiffusion):
         self.model: UNetModel = model
         self.diffusion: GaussianDiffusion = diffusion
