@@ -1,6 +1,9 @@
 import os
-import import_fixer
 import torch
+if __name__ == '__main__':
+  import import_fixer
+else:
+  from . import import_fixer
 from guided_diffusion import dist_util
 from guided_diffusion.gaussian_diffusion import GaussianDiffusion
 from guided_diffusion.unet import UNetModel
@@ -31,7 +34,24 @@ class ModelLoader:
                 'use_scale_shift_norm': True
             },
             'model_path': os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models', '64x64_diffusion.pt'))
-        }
+        },
+        '256x256_uncond': {
+            'model_flags': {
+                'attention_resolutions': "32,16,8",
+                'class_cond': False,
+                'diffusion_steps': 1000,
+                'image_size': 256,
+                'learn_sigma': True,
+                'noise_schedule': 'linear',
+                'num_channels': 256,
+                'num_head_channels': 64,
+                'num_res_blocks': 2,
+                'resblock_updown': True,
+                'use_fp16': True if DEVICE == 'cuda' else False,
+                'use_scale_shift_norm': True
+            },
+            'model_path': os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models', '256x256_diffusion_uncond.pt'))
+        },
     }
 
     def __init__(self):
@@ -50,6 +70,10 @@ class ModelLoader:
         if model_name not in type(self).MODEL_TO_ARG_SPECIFICS.keys():
             raise RuntimeError(
                 f'Model name "{model_name}" not supported.\nChoose one of: {list(type(self).MODEL_TO_ARG_SPECIFICS.keys())}')
+        
+        if not os.path.exists(type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']):
+            raise RuntimeError(
+                f'The trained model .pt file was not found in:\n{type(self).MODEL_TO_ARG_SPECIFICS[model_name]["model_path"]}')
 
         # Calculate flags:
         model_diff_flags = self.default_args.copy()
