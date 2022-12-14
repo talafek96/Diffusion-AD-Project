@@ -14,7 +14,8 @@ class Noiser(ABC):
     """
     @abstractmethod
     def apply_noise(self, images: torch.TensorType, *args, **kwargs) -> torch.TensorType:
-        """Takes in a batch of images and adds noise to them.
+        """
+        Takes in a batch of images and adds noise to them.
 
         Noise adding process is dependant on the final class implementation.
 
@@ -31,17 +32,40 @@ class Noiser(ABC):
         """
         return
 
-class ModelTimestepUniformNoiser(Noiser):
+class UniformNoiser(Noiser):
     """
-    A noiser instance that uses a trained 256x256 class unconditional DDM
-    in order to apply noise to a batch of images for a number of desired 
-    timesteps.
-    NOTE: not 
+    A noiser instance that uses a noise-tensor to apply noise uniformly 
+    to a batch of images for a number of desired timesteps.
     """
-    model: GaussianDiffusion
+    diffusion: GaussianDiffusion
 
-    def __init__(self, model: UNetModel):
-        self.model = model
+    def __init__(self, diffusion: GaussianDiffusion):
+        self.diffusion = diffusion
 
-    def apply_noise(self, images: torch.TensorType, num_timesteps: int, noise_tensor: torch.TensorType=None) -> torch.TensorType:
-        return self.model.q_sample(x_start=images,t=num_timesteps, noise=noise_tensor)
+    def apply_noise(self, 
+                    images: torch.TensorType, 
+                    num_timesteps: int, 
+                    noise_tensor: torch.TensorType=None) -> torch.TensorType:
+        """
+        iNitializes a timesteps tensor, takes in a batch of 
+        images and adds noise to them.
+
+        Noise adding process is dependant on the final class implementation.
+
+        Parameters:
+        -----------
+        images : Tensor
+            A batch of images of the shape (B, C, H, W)
+        num_timesteps : int
+            Number of timesteps to sample noise from
+        noise_tensor : Tensor (default=None)
+            A custom noise tensor (if is not None) used when applying noise to
+            the given batch of images tensor
+
+        Return:
+        -------
+        A noisy version of the images.
+        """
+        t_batch = torch.tensor([num_timesteps] * images.shape[0], device=images.device)
+
+        return self.diffusion.q_sample(x_start=images, t=t_batch, noise=noise_tensor)
