@@ -32,7 +32,7 @@ class Noiser(ABC):
         """
         return
 
-class UniformNoiser(Noiser):
+class TimestepsUniformNoiser(Noiser):
     """
     A noiser instance that uses a noise-tensor to apply noise uniformly 
     to a batch of images for a number of desired timesteps.
