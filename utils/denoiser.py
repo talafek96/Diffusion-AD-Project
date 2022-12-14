@@ -52,10 +52,11 @@ class ModelTimestepUniformDenoiser(Denoiser):
                 show_progress: bool=False) -> torch.TensorType:
         self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
         denoised_images = self.diffusion.p_sample_loop(
-            self.model,
-            noisy_images.shape,
-            noisy_images,
+            model=self.model,
+            shape=noisy_images.shape,
+            noise=noisy_images,
             clip_denoised=clip_denoised,
             progress=show_progress
         )
+
         return denoised_images
