@@ -47,7 +47,7 @@ class UniformNoiser(Noiser):
                     num_timesteps: int, 
                     noise_tensor: torch.TensorType=None) -> torch.TensorType:
         """
-        iNitializes a timesteps tensor, takes in a batch of 
+        Initializes a timesteps tensor, takes in a batch of 
         images and adds noise to them.
 
         Noise adding process is dependant on the final class implementation.
