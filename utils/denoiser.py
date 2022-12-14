@@ -41,7 +41,11 @@ class ModelTimestepUniformDenoiser(Denoiser):
         self.model: UNetModel = model
         self.diffusion: GaussianDiffusion = diffusion
 
-    def denoise(self, noisy_images: torch.TensorType, num_timesteps: int, clip_denoised: bool=True, show_progress: bool=False) -> torch.TensorType:
+    def denoise(self, 
+                noisy_images: torch.TensorType, 
+                num_timesteps: int, 
+                clip_denoised: bool=True, 
+                show_progress: bool=False) -> torch.TensorType:
         self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
         denoised_images = self.diffusion.p_sample_loop(
             self.model,
