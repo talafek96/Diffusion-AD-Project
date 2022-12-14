@@ -131,3 +131,6 @@ dmypy.json
 # Binaries
 bin/
 models/
+
+# Other trash
+desktop.ini
