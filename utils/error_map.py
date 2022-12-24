@@ -63,6 +63,10 @@ class BatchFilteredSquaredError(ErrorMapGenerator):
             'none': lambda img: img,
         }
 
+    def _reset_defaults(self) -> None:
+        self._kernel_size = 7
+        self._sigma = 1.4
+
     def generate(self, x: torch.TensorType,
                        y: torch.TensorType,
                        kernel_type: str='gaussian',
@@ -98,6 +102,8 @@ class BatchFilteredSquaredError(ErrorMapGenerator):
         if kernel_type not in self.kernels:
             raise RuntimeError(f'Bad argument "kernel_type". Expected one of: {list(self.kernels.keys())}, found: {kernel_type}')
         
+        self._reset_defaults()
+
         if 'kernel_size' in kwargs:
             self._kernel_size = kwargs['kernel_size']
         if 'sigma' in kwargs:
