@@ -37,7 +37,7 @@ class ErrorMapGenerator(ABC):
 
 class BatchFilteredSquaredError(ErrorMapGenerator):
     """
-    Generates an squared error based error-map between a single tensor x and a batch of
+    Generates a squared error based error-map between a single tensor x and a batch of
     tensors y, filtered using an optional filter (gaussian filter by default), according 
     to the method explained in IBM's MAEDAY article.
 
