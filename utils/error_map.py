@@ -11,7 +11,7 @@ class ErrorMapGenerator(ABC):
     """
 
     def __call__(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs):
-        return self.generate(*args, **kwargs)
+        return self.generate(x, y, *args, **kwargs)
     
     @abstractmethod
     def generate(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs) -> torch.TensorType:
