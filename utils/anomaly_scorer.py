@@ -9,6 +9,9 @@ class AnomalyScorer(ABC):
     two corresponding tensors.
     """
 
+    def __call__(self, error_map: torch.TensorType, **kwargs) -> float:
+        return self.score(error_map=error_map, **kwargs)
+
     @abstractmethod
     def score(self, error_map: torch.TensorType, **kwargs) -> float:
         """
@@ -19,14 +22,13 @@ class AnomalyScorer(ABC):
 
         Parameters:
         -----------
-        `x` : Tensor
-        `y` : Tensor
+        `error_map` : Tensor
         `**kwargs` : keyword arguments
 
         Return:
         -------
-        `E` : tensor
-            The error map calculated with respect to the difference between x and y.
+        `score` : float
+            The error score calculated with respect to error_map.
         """
         return
 
@@ -42,8 +44,24 @@ class MaxValueAnomalyScorer(AnomalyScorer):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, error_map: torch.TensorType, **kwargs) -> float:
-        return self.score(error_map=error_map, **kwargs)
+    def score(self, error_map: torch.TensorType) -> float:
+        """
+        Calculates the anomaly score using the max value of the error-map.
 
-    def score(self, error_map: torch.TensorType, **kwargs) -> float:
-        return torch.max(error_map)
+        Parameters:
+        -----------
+        `error_map` : Tensor
+
+        Return:
+        -------
+        `score` : float
+            The error score calculated as the max value in error_map.
+        """
+        return error_map.to(float).max().item()
+
+if __name__ == '__main__':
+    # Benchmark the MaxValueAnomalyScorer class and print out the output
+    anomaly_scorer = MaxValueAnomalyScorer()
+    error_map_test = torch.randint(0, int(1e10), size=(3, 256, 256))
+
+    print(anomaly_scorer.score(error_map_test))
