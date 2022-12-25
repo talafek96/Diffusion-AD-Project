@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import torch
 
-import error_map
-
 class AnomalyScorer(ABC):
     """
     An abstract class that acts as an interface for anomaly scorer.
@@ -13,6 +11,23 @@ class AnomalyScorer(ABC):
 
     @abstractmethod
     def score(self, error_map: torch.TensorType, **kwargs) -> float:
+        """
+        Method with which the anomaly scorer calculates the anomaly score.
+
+        An instance of this class should override this method and provide
+        an implementation.
+
+        Parameters:
+        -----------
+        `x` : Tensor
+        `y` : Tensor
+        `**kwargs` : keyword arguments
+
+        Return:
+        -------
+        `E` : tensor
+            The error map calculated with respect to the difference between x and y.
+        """
         return
 
 
@@ -25,11 +40,10 @@ class MaxValueAnomalyScorer(AnomalyScorer):
     """
 
     def __init__(self) -> None:
-        super().__init__()  # should i remove this line since it's abstract?
+        pass
 
     def __call__(self, error_map: torch.TensorType, **kwargs) -> float:
-        return self.score(error_map=error_map, kwargs=kwargs)  # TODO: is that how kwargs should be passed?
+        return self.score(error_map=error_map, **kwargs)
 
-    # TODO: should we scale? normalize? clip? (before returning the max value)
     def score(self, error_map: torch.TensorType, **kwargs) -> float:
         return torch.max(error_map)
