@@ -3,7 +3,7 @@ import torch
 
 class AnomalyScorer(ABC):
     """
-    An abstract class that acts as an interface for anomaly scorer.
+    An abstract class that acts as an interface for anomaly scorers.
 
     An anomaly score is some aggregation of error maps between 
     two corresponding tensors.
@@ -57,7 +57,7 @@ class MaxValueAnomalyScorer(AnomalyScorer):
         `score` : float
             The error score calculated as the max value in error_map.
         """
-        return error_map.to(float).max().item()
+        return error_map.max().to(float).item()
 
 if __name__ == '__main__':
     # Benchmark the MaxValueAnomalyScorer class and print out the output
