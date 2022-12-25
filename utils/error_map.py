@@ -18,7 +18,7 @@ class ErrorMapGenerator(ABC):
         """
         Method with which the error map generator creates an error map.
 
-        An instance of this calss should override this method and provide
+        An instance of this class should override this method and provide
         an implementation.
 
         Parameters:
