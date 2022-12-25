@@ -11,14 +11,14 @@ class ErrorMapGenerator(ABC):
     """
 
     def __call__(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs):
-        return self.generate(*args, **kwargs)
+        return self.generate(x, y, *args, **kwargs)
     
     @abstractmethod
     def generate(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs) -> torch.TensorType:
         """
         Method with which the error map generator creates an error map.
 
-        An instance of this calss should override this method and provide
+        An instance of this class should override this method and provide
         an implementation.
 
         Parameters:
