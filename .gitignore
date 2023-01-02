@@ -131,6 +131,7 @@ dmypy.json
 # Binaries
 bin/
 models/
+extern/mvtec/
 
 # Datasets
 extern/
