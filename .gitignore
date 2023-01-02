@@ -132,5 +132,8 @@ dmypy.json
 bin/
 models/
 
+# Datasets
+extern/
+
 # Other trash
 desktop.ini
