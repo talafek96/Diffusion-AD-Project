@@ -1,3 +1,4 @@
+# TODO: organize and assert imports
 import torch
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
@@ -5,6 +6,7 @@ import cv2
 import numpy as np
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 import pytorch_lightning as pl
 from scipy.ndimage import gaussian_filter
@@ -12,6 +14,13 @@ from abc import ABC, abstractmethod
 from dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset,  FolderDataset
 import shutil
 from utils.transforms import get_transforms
+from tqdm import tqdm
+from utils.models import ModelLoader
+from utils.noiser import Noiser, TimestepUniformNoiser
+from utils.denoiser import Denoiser, ModelTimestepUniformDenoiser
+from utils.error_map import ErrorMapGenerator, BatchFilteredSquaredError
+from utils.anomaly_scorer import AnomalyScorer, MaxValueAnomalyScorer
+from extern.guided_diffusion.guided_diffusion import gaussian_diffusion as gd
 
 def copy_files(src, dst, ignores=[]):
     src_files = os.listdir(src)
@@ -102,6 +111,10 @@ class BaseAlgo(pl.LightningModule):
 
     # TODO: check if can delete since we only "test" (it's an override method so we should proceed with caution)
     def train_dataloader(self):
+        """
+        TODO: Document.
+        Basically a method for getting the dataloader for the training phase
+        """
         if self.train_list:
             self.train_datasets = ListDataset(self.args.dataset_path, self.train_data_transforms, self.train_list)
         else:
@@ -121,6 +134,10 @@ class BaseAlgo(pl.LightningModule):
         return train_loader
 
     def test_dataloader(self):
+        """
+        TODO: Document.
+        Basically a method for getting the dataloader for the test phase
+        """
         if self.args.test_on_train_data:  # TODO: didn't Elli said it's a big no-no?
             if self.train_list:
                 self.test_datasets = syntheticListDataset(self.args.dataset_path, self.data_transforms,
@@ -157,6 +174,9 @@ class BaseAlgo(pl.LightningModule):
         return test_loader
 
     def predict_dataloader(self):
+        """
+        TODO: Document.
+        """
         predict_dataset = FolderDataset(self.args.dataset_path,self.data_transforms)
         predict_loader = DataLoader(predict_dataset, batch_size=1, shuffle=False, num_workers=0)  # , pin_memory=True) # only work on batch_size=1, now.
         return predict_loader
@@ -165,6 +185,10 @@ class BaseAlgo(pl.LightningModule):
         return None
 
     def on_train_start(self):
+        """
+        TODO: Document.
+        Probably invoked right before training phase and only once per training batch(?)
+        """
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(self.logger.log_dir)
         if self.args.saved_model_path:
             self.output_path = self.args.saved_model_path
@@ -174,8 +198,7 @@ class BaseAlgo(pl.LightningModule):
             f.write('\n')
 
 
-    # should be implemented
-    @abstractmethod
+    # TODO: should be implemented (Written by Elli) but, shouldn't we implement the test phase alone?
     def training_step(self, batch, batch_idx): # save locally aware patch features
         pass
 
@@ -183,6 +206,10 @@ class BaseAlgo(pl.LightningModule):
         pass
 
     def on_test_start(self):
+        """
+        TODO: Document.
+        Probably invoked right before test phase and only once per test batch(?)
+        """
         self.init_results_list()
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(self.logger.log_dir)
         if self.args.saved_model_path:
@@ -198,9 +225,13 @@ class BaseAlgo(pl.LightningModule):
         # return image_scores, pixel_scores
         pass
 
-
-
+    # TODO: implement and verify using our own model.
     def test_step(self, batch, batch_idx): # Nearest Neighbour Search
+        """
+        TODO: Document.
+        The Business Logic (BL) of every test step.
+        we will eventually call _ from here for every test image in a batch
+        """
         x, gt, label, file_name, x_type, img_path = batch
         score, anomaly_map = self.predict_scores(x)
         score = score[0] # assuming test_batch_size==1
@@ -230,7 +261,12 @@ class BaseAlgo(pl.LightningModule):
         if not self.args.dont_save_images:
             self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
 
+    # TODO: implement
     def test_epoch_end(self, outputs):
+        """
+        TODO: Document
+        called after 1 epoch (which contains many steps).
+        """
         pixel_auc = -1
         # if not self.args.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
         if any(self.gt_list_px_lvl):
@@ -251,3 +287,55 @@ class BaseAlgo(pl.LightningModule):
         with open(os.path.join(self.logger.log_dir,'run.txt'),'a') as f:
             f.write(str(self.values))
 
+
+def get_reconstructed_batch(model,
+                            img: torch.TensorType,
+                            noiser: Noiser,
+                            denoiser: Denoiser,
+                            num_timesteps: int,
+                            batch_size: int,
+                            interactive_print: bool=False) -> torch.TensorType:
+    """
+    TODO: Document more?
+    Return:
+    -------
+    reconstructed_batch: Tensor
+        A batch of batch_size reconstructed images from `img`.
+    """
+    reconstructed_batch = []
+
+    # Noise and reconstruct `batch_size` times and aggregate into a batch
+    for i in tqdm(range(batch_size)):
+        curr_timesteps = torch.randint(low=int(num_timesteps * 0.9), high=int(num_timesteps * 1.1), size=[1]).item()
+        noised_image = noiser.apply_noise(img.unsqueeze(0), curr_timesteps).squeeze(0).cuda()
+        reconstructed_image = denoiser.denoise(noised_image.unsqueeze(0), curr_timesteps, show_progress=True)
+        
+        if interactive_print:
+            print(f'Reconstructed image No. {i + 1}:')
+            reconstructed_image_cpu = ((reconstructed_image.squeeze(0).cpu() / 2) + 0.5).clip(0, 1)
+        plt.imshow(reconstructed_image_cpu.permute(1, 2, 0))
+        plt.show()
+    
+    reconstructed_batch.append(((reconstructed_image.squeeze(0) / 2) + 0.5).clip(0, 1))
+
+    # Aggregate results into a single tensor
+    device = reconstructed_batch[0].device
+    reconstructed_batch = torch.stack(reconstructed_batch).to(device)
+
+    return reconstructed_batch
+
+def evaluate_anomaly(img: torch.TensorType, 
+                    reconstructed_batch: torch.TensorType,
+                    error_map_gen: ErrorMapGenerator,
+                    anomaly_scorer: AnomalyScorer) -> Tuple[torch.TensorType, float, torch.TensorType]:
+    """
+    TODO: Document more?
+    Return:
+    -------
+    anomaly_map, anomaly_score
+    """
+    # Calculate an anomaly map using all of the results
+    anomaly_map = error_map_gen.generate(img, reconstructed_batch)
+    anomaly_score = anomaly_scorer.score(anomaly_map)
+    
+    return anomaly_map, anomaly_score
