@@ -244,16 +244,19 @@ class BaseAlgo(pl.LightningModule):
 
     @abstractmethod
     def predict_scores(self, x):
-        # Should be implemented by the spesific algo for computing test time score prediction
-        # returns per pixel scores (B,H,W) and image scores (B,) (numpy arrays)
-        # example with random scores:
-        # image_scores = np.random.uniform(0, 1, (x.shape[0],)) # single value per image
-        # pixel_scores = np.repeat(np.repeat(image_scores[:,None,None], x.shape[2], axis=1), x.shape[3], axis=2) # score per pixel
-        # return image_scores, pixel_scores
+        '''
+        Should be implemented by the spesific algo for computing test time score prediction.
+        Returns per pixel scores (B,H,W) and image scores (B,) (numpy arrays).
+
+        Example with random scores:
+        >>> image_scores = np.random.uniform(0, 1, (x.shape[0],)) # single value per image
+        >>> pixel_scores = np.repeat(np.repeat(image_scores[:,None,None], x.shape[2], axis=1), x.shape[3], axis=2) # score per pixel
+        >>> return image_scores, pixel_scores
+        '''
         pass
 
     # TODO: implement and verify using our own model.
-    def test_step(self, batch, batch_idx):  # Nearest Neighbour Search
+    def test_step(self, batch, batch_idx):
         """
         TODO: Document.
         The Business Logic (BL) of every test step.
