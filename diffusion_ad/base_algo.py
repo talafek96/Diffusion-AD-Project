@@ -14,13 +14,8 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 import cv2
 from PIL import Image
-from dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
+from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
 from utils.transforms import get_transforms
-from utils.models import ModelLoader
-from utils.noiser import Noiser, TimestepUniformNoiser
-from utils.denoiser import Denoiser, ModelTimestepUniformDenoiser
-from utils.error_map import ErrorMapGenerator, BatchFilteredSquaredError
-from utils.anomaly_scorer import AnomalyScorer, MaxValueAnomalyScorer
 
 
 def copy_files(src, dst, ignores=[]):
@@ -79,7 +74,6 @@ class BaseAlgo(pl.LightningModule):
             mean=[-0.485/0.229, -0.456/0.224, -0.406/0.255], std=[1/0.229, 1/0.224, 1/0.255])
 
         self.train_list = []  # TODO: is it absolutely needed?
-        self.test_list = []
 
         self.test_image_folder = ''
 
@@ -157,33 +151,25 @@ class BaseAlgo(pl.LightningModule):
         Basically a method for getting the dataloader for the test phase
         """
         if self.args.test_on_train_data:  # TODO: didn't Elli said it's a big no-no?
-            if self.train_list:
-                self.test_datasets = syntheticListDataset(self.args.dataset_path, self.data_transforms,
-                                                          self.gt_transforms, self.train_list, self.args)
+            if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.args.dataset_path,
+                                                        transform=self.data_transforms,
+                                                        phase='train',
+                                                        category=self.args.category)
             else:
-                if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
-                    self.test_datasets = FilelistDataset(root=self.args.dataset_path,
-                                                         transform=self.data_transforms,
-                                                         phase='train',
-                                                         category=self.args.category)
-                else:
-                    self.test_datasets = MVTecDataset(root=os.path.join(self.args.dataset_path, self.args.category),
-                                                      transform=self.data_transforms, gt_transform=self.gt_transforms,
-                                                      phase='train')
+                self.test_datasets = MVTecDataset(root=os.path.join(self.args.dataset_path, self.args.category),
+                                                    transform=self.data_transforms, gt_transform=self.gt_transforms,
+                                                    phase='train')
         else:
-            if self.test_list:
-                self.test_datasets = syntheticListDataset(
-                    self.args.dataset_path, self.data_transforms, self.gt_transforms, self.test_list, self.args)
+            if os.path.isfile(os.path.join(self.args.dataset_path, f'test_{self.args.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.args.dataset_path,
+                                                        transform=self.data_transforms,
+                                                        phase='test',
+                                                        category=self.args.category)
             else:
-                if os.path.isfile(os.path.join(self.args.dataset_path, f'test_{self.args.category}.csv')):
-                    self.test_datasets = FilelistDataset(root=self.args.dataset_path,
-                                                         transform=self.data_transforms,
-                                                         phase='test',
-                                                         category=self.args.category)
-                else:
-                    # TODO: investigate if this is the only option we need to use
-                    self.test_datasets = MVTecDataset(root=os.path.join(
-                        self.args.dataset_path, self.args.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
+                # TODO: investigate if this is the only option we need to use
+                self.test_datasets = MVTecDataset(root=os.path.join(
+                    self.args.dataset_path, self.args.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
         if self.args.max_test_imgs and self.args.max_test_imgs < len(self.test_datasets):
             self.test_datasets = torch.utils.data.random_split(
                 self.test_datasets,
@@ -322,61 +308,3 @@ class BaseAlgo(pl.LightningModule):
         self.log_dict(self.values)
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
-
-
-def get_reconstructed_batch(img: torch.TensorType,
-                            noiser: Noiser,
-                            denoiser: Denoiser,
-                            num_timesteps: int,
-                            batch_size: int,
-                            interactive_print: bool = False) -> torch.TensorType:
-    """
-    TODO: Document more?
-    Return:
-    -------
-    reconstructed_batch: Tensor
-        A batch of batch_size reconstructed images from `img`.
-    """
-    reconstructed_batch = []
-
-    # Noise and reconstruct `batch_size` times and aggregate into a batch
-    for i in tqdm(range(batch_size)):
-        curr_timesteps = torch.randint(
-            low=int(num_timesteps * 0.9), high=int(num_timesteps * 1.1), size=[1]).item()
-        noised_image = noiser.apply_noise(
-            img.unsqueeze(0), curr_timesteps).squeeze(0).cuda()
-        reconstructed_image = denoiser.denoise(
-            noised_image.unsqueeze(0), curr_timesteps, show_progress=True)
-
-        if interactive_print:
-            print(f'Reconstructed image No. {i + 1}:')
-            reconstructed_image_cpu = (
-                (reconstructed_image.squeeze(0).cpu() / 2) + 0.5).clip(0, 1)
-        plt.imshow(reconstructed_image_cpu.permute(1, 2, 0))
-        plt.show()
-
-    reconstructed_batch.append(
-        ((reconstructed_image.squeeze(0) / 2) + 0.5).clip(0, 1))
-
-    # Aggregate results into a single tensor
-    device = reconstructed_batch[0].device
-    reconstructed_batch = torch.stack(reconstructed_batch).to(device)
-
-    return reconstructed_batch
-
-
-def evaluate_anomaly(img: torch.TensorType,
-                     reconstructed_batch: torch.TensorType,
-                     error_map_gen: ErrorMapGenerator,
-                     anomaly_scorer: AnomalyScorer) -> Tuple[torch.TensorType, float, torch.TensorType]:
-    """
-    TODO: Document more?
-    Return:
-    -------
-    anomaly_map, anomaly_score
-    """
-    # Calculate an anomaly map using all of the results
-    anomaly_map = error_map_gen.generate(img, reconstructed_batch)
-    anomaly_score = anomaly_scorer.score(anomaly_map)
-
-    return anomaly_map, anomaly_score
