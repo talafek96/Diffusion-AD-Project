@@ -69,13 +69,21 @@ class BaseAlgo(pl.LightningModule):
     
     TODO: consider removing the documentation for the NOT_NEEDED params.
 
-    hparams:
+    args:
     - phase: Can be 'test' or 'train', we will probably only use 'test'.
     - category: The folder name from the data set. ('bottle', 'hazelnut', ...)
-    - coreset: NOT NEEDED (used for batch selection while training)
+    - coreset_sampling_ratio: NOT NEEDED (used for batch selection while training)
     - dataset_path: NOT_NEEDED if we (will) initialize the dataset outside and inject it.
     - num_epochs: number of "repitition" if i remember correctly, used by pl.Trainer,
                   default value is 1.
+    - batch_size: NOT_NEEDED 
+                  (used when initializing the data loaders, 
+                  '1' for test, batch_size for train)
+    - load_size: IMPORTANT, The size of the image in pixels, used when preparing the 
+                 transforms used: data_transforms, gt_transforms. default=256
+    - input_size: like 'load_size', used when initializing the transforms. default=224
+                  TODO: what is it needed for?
+    - project_root_path: Pretty self explanatory. (default='./test')
 
     """    
     def __init__(self, args):
