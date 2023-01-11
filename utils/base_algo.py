@@ -64,6 +64,20 @@ def heatmap_on_image(heatmap, image):
 
 
 class BaseAlgo(pl.LightningModule):
+    """
+    save_hyperparameters() - If called, it saves the hyperparameters to the ckpt file
+    
+    TODO: consider removing the documentation for the NOT_NEEDED params.
+
+    hparams:
+    - phase: Can be 'test' or 'train', we will probably only use 'test'.
+    - category: The folder name from the data set. ('bottle', 'hazelnut', ...)
+    - coreset: NOT NEEDED (used for batch selection while training)
+    - dataset_path: NOT_NEEDED if we (will) initialize the dataset outside and inject it.
+    - num_epochs: number of "repitition" if i remember correctly, used by pl.Trainer,
+                  default value is 1.
+
+    """    
     def __init__(self, args):
         super(BaseAlgo, self).__init__()
         self.args = args
