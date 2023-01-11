@@ -75,8 +75,8 @@ class BaseAlgo(pl.LightningModule):
     - coreset_sampling_ratio: NOT NEEDED (used for batch selection while training)
     - dataset_path: NOT_NEEDED if we (will) initialize the dataset outside and inject it.
     - num_epochs: number of "repitition" if i remember correctly, used by pl.Trainer,
-                  default value is 1.
-    - batch_size: NOT_NEEDED 
+                  default=1.
+    - batch_size: NOT_NEEDED (here)
                   (used when initializing the data loaders, 
                   '1' for test, batch_size for train)
     - load_size: IMPORTANT, The size of the image in pixels, used when preparing the 
@@ -84,6 +84,11 @@ class BaseAlgo(pl.LightningModule):
     - input_size: like 'load_size', used when initializing the transforms. default=224
                   TODO: what is it needed for?
     - project_root_path: Pretty self explanatory. (default='./test')
+                         used when accessing files, either for loading test images,
+                         or even when saving the results like the anomaly maps, scores, etc.
+    - save_src_code: NOT_(SURE_IF)_NEEDED. it's a boolean flag, (default=True)
+    - save_anomaly_map: losing focus over here F :( TODO:!!!
+    - n_neighbors: NOT_NEEDED.
 
     """    
     def __init__(self, args):
