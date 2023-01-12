@@ -69,26 +69,26 @@ class BaseAlgo(pl.LightningModule):
     
     TODO: consider removing the documentation for the NOT_NEEDED params.
 
-    args:
+    args: (dict-like parameter)
     - phase: Can be 'test' or 'train', we will probably only use 'test'.
     - category: The folder name from the data set. ('bottle', 'hazelnut', ...)
     - coreset_sampling_ratio: NOT NEEDED (used for batch selection while training)
-    - dataset_path: NOT_NEEDED if we (will) initialize the dataset outside and inject it.
+    - dataset_path: The path to the dataset. (category will be concat)
     - num_epochs: number of "repitition" if i remember correctly, used by pl.Trainer,
-                  default=1.
-    - batch_size: NOT_NEEDED (here)
-                  (used when initializing the data loaders, 
-                  '1' for test, batch_size for train)
+                  default=1. Not relevant for test.
+    - batch_size: used when initializing the data loaders, '1' for test, batch_size for train
     - load_size: IMPORTANT, The size of the image in pixels, used when preparing the 
                  transforms used: data_transforms, gt_transforms. default=256
     - input_size: like 'load_size', used when initializing the transforms. default=224
-                  TODO: what is it needed for?
+                  224x224 center crop from load_size(256x256).
     - project_root_path: Pretty self explanatory. (default='./test')
-                         used when accessing files, either for loading test images,
-                         or even when saving the results like the anomaly maps, scores, etc.
+                         used when saving the results like the anomaly maps, 
+                         scores, etc.
+                         USED when initializing the Trainer.
     - save_src_code: NOT_(SURE_IF)_NEEDED. it's a boolean flag, (default=True)
-    - save_anomaly_map: losing focus over here F :( TODO:!!!
-    - n_neighbors: NOT_NEEDED.
+                     TODO: change default to False.
+    - save_anomaly_map: A boolean flag, if True: saves the heatmaps and scores.
+    - n_neighbors: NOT_NEEDED. can delete
 
     """    
     def __init__(self, args):
