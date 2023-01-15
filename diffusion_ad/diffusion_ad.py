@@ -2,22 +2,36 @@ from typing import Tuple
 import tqdm
 import torch
 import matplotlib.pyplot as plt
-from utils.models import ModelLoader
 from utils.noiser import Noiser, TimestepUniformNoiser
 from utils.denoiser import Denoiser, ModelTimestepUniformDenoiser
 from utils.error_map import ErrorMapGenerator, BatchFilteredSquaredError
 from utils.anomaly_scorer import AnomalyScorer, MaxValueAnomalyScorer
 from diffusion_ad.base_algo import BaseAlgo
 
+DIFFUSION_AD_REQUIRED_HPARAMS = ['reconstruction_batch_size', 'anomaly_map_generator_kwargs', 'anomaly_scorer_kwargs']
+CATEGORY_TO_NOISE_TIMESTEPS = dict()
+
 
 class DiffusionAD(BaseAlgo):
-    def __init__(self, hparams):
+    noiser: Noiser
+    denoiser: Denoiser
+    anomaly_map_generator: ErrorMapGenerator
+    anomaly_scorer: AnomalyScorer
+
+    def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, hparams):
+        assert all(param in hparams for param in DIFFUSION_AD_REQUIRED_HPARAMS)
         super().__init__(hparams)
+        if 'verbosity' not in self.hparams.keys():
+            self.hparams['verbosity'] = 0
 
-        # Load the model and save it
-        self.model = ModelLoader().get_model('256x256_uncond')
+        # Initiate members
+        self.noiser = noiser
+        self.denoiser = denoiser
+        self.anomaly_map_generator = anomaly_map_generator
+        self.anomaly_scorer = anomaly_scorer
 
-    def get_reconstructed_batch(img: torch.TensorType,
+    def get_reconstructed_batch(self,
+                                img: torch.TensorType,
                                 noiser: Noiser,
                                 denoiser: Denoiser,
                                 num_timesteps: int,
@@ -77,10 +91,11 @@ class DiffusionAD(BaseAlgo):
 
         return reconstructed_batch
 
-    def evaluate_anomaly(img: torch.TensorType,
+    def evaluate_anomaly(self,
+                         img: torch.TensorType,
                          reconstructed_batch: torch.TensorType,
                          error_map_gen: ErrorMapGenerator,
-                         anomaly_scorer: AnomalyScorer) -> Tuple[torch.TensorType, float]:
+                         anomaly_scorer: AnomalyScorer) -> Tuple[torch.Tensor, float]:
         """
         Given an image, and a batch of image that were reconstructed from noisy versions of it,
         calculates both an anomaly map and an anomaly score.
@@ -99,27 +114,40 @@ class DiffusionAD(BaseAlgo):
 
         Return:
         -------
-        `anomaly_map` : TensorType, `anomaly_score` : float
+        `anomaly_map` : Tensor, `anomaly_score` : float
         """
         # Calculate an anomaly map using all of the results
-        anomaly_map = error_map_gen.generate(img, reconstructed_batch)
-        anomaly_score = anomaly_scorer.score(anomaly_map)
+        anomaly_map = error_map_gen.generate(img, reconstructed_batch, **self.hparams['anomaly_map_generator_kwargs'])
+        anomaly_score = anomaly_scorer.score(anomaly_map, **self.hparams['anomaly_scorer_kwargs'])
 
         return anomaly_map, anomaly_score
 
-    def predict_scores(self, img):
+    def predict_scores(self, img: torch.Tensor, category: str):
         """
         Computes test time score prediction.
-        Returns per pixel scores (B,H,W) and image scores (B,) (numpy arrays).
+        Returns per pixel scores (B, H, W) and image scores (B,) (numpy arrays).
         This instance assumes that B == 1.
 
         Parameters:
         -----------
         `img` : Tensor (B, H, W)
             The image to predict the scores for.
+        `category` : str
+            The category/class of the image.
         
         Return:
         -------
         `anomaly_map` : ndarray (B, H, W), `image_score` : ndarray (B,)
         """
-        pass
+        num_timesteps = CATEGORY_TO_NOISE_TIMESTEPS[category]
+        reconstructed_images = self.get_reconstructed_batch(img,
+                                                            self.noiser,
+                                                            self.denoiser,
+                                                            num_timesteps,
+                                                            self.hparams['reconstruction_batch_size'],
+                                                            interactive_print=self.hparams['verbosity'] >= 1)
+        anomaly_map, anomaly_score = self.evaluate_anomaly(reconstructed_images,
+                                                           self.anomaly_map_generator,
+                                                           self.anomaly_scorer)
+
+        return anomaly_map, anomaly_score

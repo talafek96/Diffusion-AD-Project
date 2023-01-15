@@ -14,7 +14,7 @@ class ErrorMapGenerator(ABC):
         return self.generate(x, y, *args, **kwargs)
     
     @abstractmethod
-    def generate(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs) -> torch.TensorType:
+    def generate(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs) -> torch.Tensor:
         """
         Method with which the error map generator creates an error map.
 
@@ -29,7 +29,7 @@ class ErrorMapGenerator(ABC):
 
         Return:
         -------
-        `E` : tensor
+        `E` : Tensor
             The error map calculated with respect to the difference between x and y.
         """
         return
