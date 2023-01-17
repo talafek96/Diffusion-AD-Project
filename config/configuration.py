@@ -1,6 +1,7 @@
 import os
+from argparse import Namespace
 
-_DEFAULT_TIMESTEPS = 200
+_DEFAULT_TIMESTEPS = 250
 _DEFAULT_RECON_BATCH_SIZE = 5
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 
@@ -19,7 +20,7 @@ DIFFUSION_AD_REQUIRED_HPARAMS = [
     'save_anomaly_map'
 ]
 
-DIFFUSION_AD_HPARAMS = {
+DIFFUSION_AD_HPARAMS = Namespace(**{
     'reconstruction_batch_size': _DEFAULT_RECON_BATCH_SIZE,
     'anomaly_map_generator_kwargs': {}, 
     'anomaly_scorer_kwargs': {},
@@ -32,7 +33,7 @@ DIFFUSION_AD_HPARAMS = {
     'input_size': 256,
     'root_output_dir': os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME)),
     'save_anomaly_map': True
-}
+})
 
 CATEGORY_TO_NOISE_TIMESTEPS = {
     'bottle': _DEFAULT_TIMESTEPS,

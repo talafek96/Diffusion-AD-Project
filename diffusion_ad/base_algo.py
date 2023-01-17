@@ -1,26 +1,19 @@
-# TODO: organize and assert imports
 from abc import ABC, abstractmethod
-from typing import Tuple
-from tqdm import tqdm
 import os
 import shutil
 import torch
 from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
 import cv2
-from PIL import Image
-from dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
+from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
 from utils.transforms import get_transforms
-from utils.models import ModelLoader
-from utils.noiser import Noiser, TimestepUniformNoiser
-from utils.denoiser import Denoiser, ModelTimestepUniformDenoiser
-from utils.error_map import ErrorMapGenerator, BatchFilteredSquaredError
-from utils.anomaly_scorer import AnomalyScorer, MaxValueAnomalyScorer
+
+MAGIC_INV_NORMALIZE_MEAN = [-0.485/0.229, -0.456/0.224, -0.406/0.255]
+MAGIC_INV_NORMALIZE_STD = [1/0.229, 1/0.224, 1/0.255]
 
 
 def copy_files(src, dst, ignores=[]):
@@ -99,29 +92,23 @@ class BaseAlgo(pl.LightningModule):
         A boolean flag, if True saves the heatmaps and scores.
     """
 
-    def __init__(self, args):
+    def __init__(self, hparams):
         super(BaseAlgo, self).__init__()
-        self.args = args
-        # TODO: delete this todo after reading: args can basically be any dict-like object.
-        self.save_hyperparameters(args)
+        self.hparams = hparams
+        self.save_hyperparameters(hparams)
         self.init_results_list()
 
-        self.train_data_transforms, self.data_transforms, self.gt_transforms = get_transforms(
-            self.args)
+        self.train_data_transforms, self.data_transforms, self.gt_transforms = get_transforms(self.hparams)
 
-        # TODO: by the gods of OOP we should consider injecting it aswell for the sake of 'D' in SOLID.
-        self.inv_normalize = transforms.Normalize(
-            mean=[-0.485/0.229, -0.456/0.224, -0.406/0.255], std=[1/0.229, 1/0.224, 1/0.255])
+        self.inv_normalize = transforms.Normalize(mean=MAGIC_INV_NORMALIZE_MEAN, std=MAGIC_INV_NORMALIZE_STD)
 
-        self.train_list = []  # TODO: is it absolutely needed?
-        self.test_list = []
+        self.train_list = []
 
         self.test_image_folder = ''
 
     def init_results_list(self):
         """
-        TODO: document(?)
-        Basically initializing the datamembers used as output.
+        Initializing the datamembers used as output.
         """
         self.gt_list_px_lvl = []
         self.pred_list_px_lvl = []
@@ -131,8 +118,8 @@ class BaseAlgo(pl.LightningModule):
 
     def save_anomaly_map(self, anomaly_map, input_img, gt_img, file_name, x_type, score):
         """
-        TODO: document(?)
-        Saving the input image, the anomaly map, the AM on the IMG, with an option of also saving the Ground Truth.
+        Saving the input image, the anomaly map, the AM on the IMG, 
+        with an option of also saving the Ground Truth.
         """
         if anomaly_map.shape != input_img.shape:
             anomaly_map = cv2.resize(
@@ -158,88 +145,77 @@ class BaseAlgo(pl.LightningModule):
             cv2.imwrite(os.path.join(
                 self.sample_path, f'score{score:.2f}_{x_type}_{file_name}_gt.jpg'), gt_img)
 
-    # TODO: check if can delete since we only "test" (it's an override method so we should proceed with caution)
+
     def train_dataloader(self):
         """
-        TODO: Document.
         Basically a method for getting the dataloader for the training phase
         """
         if self.train_list:
             self.train_datasets = ListDataset(
-                self.args.dataset_path, self.train_data_transforms, self.train_list)
+                self.hparams.dataset_path, self.train_data_transforms, self.train_list)
         else:
-            if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
-                self.train_datasets = FilelistDataset(root=self.args.dataset_path,
+            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'train_{self.hparams.category}.csv')):
+                self.train_datasets = FilelistDataset(root=self.hparams.dataset_path,
                                                       transform=self.train_data_transforms,
                                                       phase='train',
-                                                      category=self.args.category)
+                                                      category=self.hparams.category)
             else:
                 self.train_datasets = MVTecDataset(root=os.path.join(
-                    self.args.dataset_path, self.args.category), transform=self.train_data_transforms, gt_transform=self.gt_transforms, phase='train')
-        if self.args.max_train_imgs and self.args.max_train_imgs < len(self.train_datasets):
+                    self.hparams.dataset_path, self.hparams.category), transform=self.train_data_transforms, gt_transform=self.gt_transforms, phase='train')
+        if self.hparams.max_train_imgs and self.hparams.max_train_imgs < len(self.train_datasets):
             self.train_datasets = torch.utils.data.random_split(
                 self.train_datasets,
-                [self.args.max_train_imgs, len(
-                    self.train_datasets)-self.args.max_train_imgs],
-                generator=torch.Generator().manual_seed(self.args.seed))[0]
-        train_loader = DataLoader(self.train_datasets, batch_size=self.args.batch_size,
-                                  shuffle=True, num_workers=0)  # , pin_memory=True)
+                [self.hparams.max_train_imgs, len(
+                    self.train_datasets)-self.hparams.max_train_imgs],
+                generator=torch.Generator().manual_seed(self.hparams.seed))[0]
+        train_loader = DataLoader(self.train_datasets, batch_size=self.hparams.batch_size,
+                                  shuffle=True, num_workers=0, pin_memory=True)
         return train_loader
 
     def test_dataloader(self):
         """
-        TODO: Document.
         Basically a method for getting the dataloader for the test phase
         """
-        if self.args.test_on_train_data:  # TODO: didn't Elli said it's a big no-no?
-            if self.train_list:
-                self.test_datasets = syntheticListDataset(self.args.dataset_path, self.data_transforms,
-                                                          self.gt_transforms, self.train_list, self.args)
+        if self.hparams.test_on_train_data:
+            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'train_{self.hparams.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.hparams.dataset_path,
+                                                        transform=self.data_transforms,
+                                                        phase='train',
+                                                        category=self.hparams.category)
             else:
-                if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
-                    self.test_datasets = FilelistDataset(root=self.args.dataset_path,
-                                                         transform=self.data_transforms,
-                                                         phase='train',
-                                                         category=self.args.category)
-                else:
-                    self.test_datasets = MVTecDataset(root=os.path.join(self.args.dataset_path, self.args.category),
-                                                      transform=self.data_transforms, gt_transform=self.gt_transforms,
-                                                      phase='train')
+                self.test_datasets = MVTecDataset(root=os.path.join(self.hparams.dataset_path, self.hparams.category),
+                                                    transform=self.data_transforms, gt_transform=self.gt_transforms,
+                                                    phase='train')
         else:
-            if self.test_list:
-                self.test_datasets = syntheticListDataset(
-                    self.args.dataset_path, self.data_transforms, self.gt_transforms, self.test_list, self.args)
+            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'test_{self.hparams.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.hparams.dataset_path,
+                                                        transform=self.data_transforms,
+                                                        phase='test',
+                                                        category=self.hparams.category)
             else:
-                if os.path.isfile(os.path.join(self.args.dataset_path, f'test_{self.args.category}.csv')):
-                    self.test_datasets = FilelistDataset(root=self.args.dataset_path,
-                                                         transform=self.data_transforms,
-                                                         phase='test',
-                                                         category=self.args.category)
-                else:
-                    # TODO: investigate if this is the only option we need to use
-                    self.test_datasets = MVTecDataset(root=os.path.join(
-                        self.args.dataset_path, self.args.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
-        if self.args.max_test_imgs and self.args.max_test_imgs < len(self.test_datasets):
+                self.test_datasets = MVTecDataset(root=os.path.join(
+                    self.hparams.dataset_path, self.hparams.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
+        if self.hparams.max_test_imgs and self.hparams.max_test_imgs < len(self.test_datasets):
             self.test_datasets = torch.utils.data.random_split(
                 self.test_datasets,
-                [self.args.max_test_imgs, len(
-                    self.test_datasets)-self.args.max_test_imgs],
-                generator=torch.Generator().manual_seed(self.args.seed))[0]
-        # , pin_memory=True) # only work on batch_size=1, now.
+                [self.hparams.max_test_imgs, len(
+                    self.test_datasets)-self.hparams.max_test_imgs],
+                generator=torch.Generator().manual_seed(self.hparams.seed))[0]
+
         test_loader = DataLoader(
-            self.test_datasets, batch_size=1, shuffle=False, num_workers=0)
+            self.test_datasets, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
 
         return test_loader
 
     def predict_dataloader(self):
         """
-        TODO: Document.
+        Most likely irrelevant, but left untouched for future generations.
         """
         predict_dataset = FolderDataset(
-            self.args.dataset_path, self.data_transforms)
-        # , pin_memory=True) # only work on batch_size=1, now.
+            self.hparams.dataset_path, self.data_transforms)
+
         predict_loader = DataLoader(
-            predict_dataset, batch_size=1, shuffle=False, num_workers=0)
+            predict_dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
         return predict_loader
 
     def configure_optimizers(self):
@@ -247,19 +223,17 @@ class BaseAlgo(pl.LightningModule):
 
     def on_train_start(self):
         """
-        TODO: Document.
-        Probably invoked right before training phase and only once per training batch(?)
+        Invoked right before training phase and only once per training epoch.
         """
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
             self.logger.log_dir)
-        if self.args.saved_model_path:
-            self.output_path = self.args.saved_model_path
+        if self.hparams.saved_model_path:
+            self.output_path = self.hparams.saved_model_path
         os.makedirs(self.output_path, exist_ok=True)
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'w') as f:
-            f.write(str(self.args))
+            f.write(str(self.hparams))
             f.write('\n')
 
-    # TODO: should be implemented (Written by Elli) but, shouldn't we implement the test phase alone?
     def training_step(self, batch, batch_idx):  # save locally aware patch features
         pass
 
@@ -268,17 +242,16 @@ class BaseAlgo(pl.LightningModule):
 
     def on_test_start(self):
         """
-        TODO: Document.
-        Probably invoked right before test phase and only once per test batch(?)
+        Invoked right before test phase and only once per test epoch (there is only one test epoch).
         """
         self.init_results_list()
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
             self.logger.log_dir)
-        if self.args.saved_model_path:
-            self.output_path = self.args.saved_model_path
+        if self.hparams.saved_model_path:
+            self.output_path = self.hparams.saved_model_path
 
     @abstractmethod
-    def predict_scores(self, x):
+    def predict_scores(self, x, category: str):
         '''
         Should be implemented by the spesific algo for computing test time score prediction.
         Returns per pixel scores (B,H,W) and image scores (B,) (numpy arrays).
@@ -290,15 +263,14 @@ class BaseAlgo(pl.LightningModule):
         '''
         pass
 
-    # TODO: implement and verify using our own model.
+
     def test_step(self, batch, batch_idx):
         """
-        TODO: Document.
         The Business Logic (BL) of every test step.
-        we will eventually call _ from here for every test image in a batch
+        we will eventually call predict_scores from here for every test image in the test set.
         """
         x, gt, label, file_name, x_type, img_path = batch
-        score, anomaly_map = self.predict_scores(x)
+        score, anomaly_map = self.predict_scores(x, x_type)
         score = score[0]  # assuming test_batch_size==1
         anomaly_map = anomaly_map[0]  # test_batch_size==1
 
@@ -306,14 +278,14 @@ class BaseAlgo(pl.LightningModule):
             gt_np = (gt.cpu().numpy()[0, 0] > 0).astype(int)
             self.gt_list_px_lvl.extend(gt_np.ravel())
         else:  # either good image or no pixel level GT
-            gt_np = np.zeros((self.args.input_size, self.args.input_size))
+            gt_np = np.zeros((self.hparams.input_size, self.hparams.input_size))
             if gt[0] == -1:  # no pixel level GT
                 self.gt_list_px_lvl.extend([0])
             else:
                 self.gt_list_px_lvl.extend(gt_np.ravel())
 
         anomaly_map_resized = cv2.resize(
-            anomaly_map, (self.args.input_size, self.args.input_size))
+            anomaly_map, (self.hparams.input_size, self.hparams.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
 
@@ -326,7 +298,7 @@ class BaseAlgo(pl.LightningModule):
         x = self.inv_normalize(x)
         input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[
                                0]*255, cv2.COLOR_BGR2RGB)
-        if not self.args.dont_save_images:
+        if not self.hparams.dont_save_images:
             self.save_anomaly_map(
                 anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
 
@@ -337,7 +309,7 @@ class BaseAlgo(pl.LightningModule):
         called after 1 epoch (which contains many steps).
         """
         pixel_auc = -1
-        # if not self.args.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
+        # if not self.hparams.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
         if any(self.gt_list_px_lvl):
             print("Total pixel-level auc-roc score :")
             pixel_auc = roc_auc_score(
@@ -357,61 +329,3 @@ class BaseAlgo(pl.LightningModule):
         self.log_dict(self.values)
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
-
-
-def get_reconstructed_batch(img: torch.TensorType,
-                            noiser: Noiser,
-                            denoiser: Denoiser,
-                            num_timesteps: int,
-                            batch_size: int,
-                            interactive_print: bool = False) -> torch.TensorType:
-    """
-    TODO: Document more?
-    Return:
-    -------
-    reconstructed_batch: Tensor
-        A batch of batch_size reconstructed images from `img`.
-    """
-    reconstructed_batch = []
-
-    # Noise and reconstruct `batch_size` times and aggregate into a batch
-    for i in tqdm(range(batch_size)):
-        curr_timesteps = torch.randint(
-            low=int(num_timesteps * 0.9), high=int(num_timesteps * 1.1), size=[1]).item()
-        noised_image = noiser.apply_noise(
-            img.unsqueeze(0), curr_timesteps).squeeze(0).cuda()
-        reconstructed_image = denoiser.denoise(
-            noised_image.unsqueeze(0), curr_timesteps, show_progress=True)
-
-        if interactive_print:
-            print(f'Reconstructed image No. {i + 1}:')
-            reconstructed_image_cpu = (
-                (reconstructed_image.squeeze(0).cpu() / 2) + 0.5).clip(0, 1)
-        plt.imshow(reconstructed_image_cpu.permute(1, 2, 0))
-        plt.show()
-
-    reconstructed_batch.append(
-        ((reconstructed_image.squeeze(0) / 2) + 0.5).clip(0, 1))
-
-    # Aggregate results into a single tensor
-    device = reconstructed_batch[0].device
-    reconstructed_batch = torch.stack(reconstructed_batch).to(device)
-
-    return reconstructed_batch
-
-
-def evaluate_anomaly(img: torch.TensorType,
-                     reconstructed_batch: torch.TensorType,
-                     error_map_gen: ErrorMapGenerator,
-                     anomaly_scorer: AnomalyScorer) -> Tuple[torch.TensorType, float, torch.TensorType]:
-    """
-    TODO: Document more?
-    Return:
-    -------
-    anomaly_map, anomaly_score
-    """
-    # Calculate an anomaly map using all of the results
-    anomaly_map = error_map_gen.generate(img, reconstructed_batch)
-    anomaly_score = anomaly_scorer.score(anomaly_map)
-
-    return anomaly_map, anomaly_score
