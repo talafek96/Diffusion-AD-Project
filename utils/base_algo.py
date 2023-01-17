@@ -89,7 +89,7 @@ class BaseAlgo(pl.LightningModule):
         IMPORTANT, The size of the image in pixels, used when preparing the 
         transforms used: data_transforms, gt_transforms. default=256
     - input_size:
-        Used for the center crop transform. default=224 (224x224 center crop)
+        Used for the center crop transform. default=256 (256x256 center crop)
     - root_output_dir:
         Used when saving the results like the anomaly maps.  (default='./test')
         scores, etc.
