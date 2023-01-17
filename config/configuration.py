@@ -1,5 +1,8 @@
+import os
+
 _DEFAULT_TIMESTEPS = 200
 _DEFAULT_RECON_BATCH_SIZE = 5
+_DEFAULT_OUTPUT_DIR_NAME = 'output'
 
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
@@ -12,8 +15,7 @@ DIFFUSION_AD_REQUIRED_HPARAMS = [
     'batch_size',
     'load_size',
     'input_size',
-    'project_root_path',
-    'save_src_code',
+    'root_output_dir',
     'save_anomaly_map'
 ]
 
@@ -28,8 +30,7 @@ DIFFUSION_AD_HPARAMS = {
     'batch_size': 1,
     'load_size': 256,
     'input_size': 256,
-    'root_output_dir': f'{__file__}',  # TODO: make sure it's the right value
-    'save_src_code': False,
+    'root_output_dir': os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME)),
     'save_anomaly_map': True
 }
 
@@ -50,5 +51,3 @@ CATEGORY_TO_NOISE_TIMESTEPS = {
     'wood': _DEFAULT_TIMESTEPS,
     'zipper': _DEFAULT_TIMESTEPS
 }
-import os
-print(os.path.abspath(os.path.join(__file__, '..', '..', 'output')))

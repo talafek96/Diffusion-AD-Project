@@ -65,32 +65,40 @@ def heatmap_on_image(heatmap, image):
 
 class BaseAlgo(pl.LightningModule):
     """
-    save_hyperparameters() - If called, it saves the hyperparameters to the ckpt file
-    
-    TODO: consider removing the documentation for the NOT_NEEDED params.
+    A basic abstract class for training and testing an
+    anomaly detection model.
 
-    args: (dict-like parameter)
-    - phase: Can be 'test' or 'train', we will probably only use 'test'.
-    - category: The folder name from the data set. ('bottle', 'hazelnut', ...)
-    - coreset_sampling_ratio: NOT NEEDED (used for batch selection while training)
-    - dataset_path: The path to the dataset. (category will be concat)
-    - num_epochs: number of "repitition" if i remember correctly, used by pl.Trainer,
-                  default=1. Not relevant for test.
-    - batch_size: used when initializing the data loaders, '1' for test, batch_size for train
-    - load_size: IMPORTANT, The size of the image in pixels, used when preparing the 
-                 transforms used: data_transforms, gt_transforms. default=256
-    - input_size: like 'load_size', used when initializing the transforms. default=224
-                  224x224 center crop from load_size(256x256).
-    - project_root_path: Pretty self explanatory. (default='./test')
-                         used when saving the results like the anomaly maps, 
-                         scores, etc.
-                         USED when initializing the Trainer.
-    - save_src_code: NOT_(SURE_IF)_NEEDED. it's a boolean flag, (default=True)
-                     TODO: change default to False.
-    - save_anomaly_map: A boolean flag, if True: saves the heatmaps and scores.
-    - n_neighbors: NOT_NEEDED. can delete
+    Attributes:
+    -----------
+    hparams: (dict-like parameter)
+    - phase:
+        Can be 'test' or 'train', we will probably only use 'test'.
+    - category:
+        The folder name from the data set. ('bottle', 'hazelnut', ...)
+    - coreset_sampling_ratio: 
+        Used for batch selection while training. (NOT NEEDED FOR TEST)
+    - dataset_path:
+        The path to the dataset. (category will be concat)
+    - num_epochs:
+        Number of training epochs, used by pl.Trainer,
+        default=1. Not relevant for test.
+    - batch_size:
+        Used when initializing the data loaders.
+        '1' for test, batch_size for train.
+    - load_size:
+        IMPORTANT, The size of the image in pixels, used when preparing the 
+        transforms used: data_transforms, gt_transforms. default=256
+    - input_size:
+        Used for the center crop transform. default=224 (224x224 center crop)
+    - root_output_dir:
+        Used when saving the results like the anomaly maps.  (default='./test')
+        scores, etc.
+        Required for initializing the Trainer.
+        The trainer will export output files into `${root_output_dir}/${category}`
+    - save_anomaly_map:
+        A boolean flag, if True saves the heatmaps and scores.
+    """
 
-    """    
     def __init__(self, args):
         super(BaseAlgo, self).__init__()
         self.args = args
