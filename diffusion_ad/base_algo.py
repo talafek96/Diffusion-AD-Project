@@ -1,19 +1,14 @@
-# TODO: organize and assert imports
 from abc import ABC, abstractmethod
-from typing import Tuple
-from tqdm import tqdm
 import os
 import shutil
 import torch
 from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
 import cv2
-from PIL import Image
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
 from utils.transforms import get_transforms
 
@@ -107,14 +102,13 @@ class BaseAlgo(pl.LightningModule):
 
         self.inv_normalize = transforms.Normalize(mean=MAGIC_INV_NORMALIZE_MEAN, std=MAGIC_INV_NORMALIZE_STD)
 
-        self.train_list = []  # TODO: is it absolutely needed?
+        self.train_list = []
 
         self.test_image_folder = ''
 
     def init_results_list(self):
         """
-        TODO: document(?)
-        Basically initializing the datamembers used as output.
+        Initializing the datamembers used as output.
         """
         self.gt_list_px_lvl = []
         self.pred_list_px_lvl = []
@@ -124,8 +118,8 @@ class BaseAlgo(pl.LightningModule):
 
     def save_anomaly_map(self, anomaly_map, input_img, gt_img, file_name, x_type, score):
         """
-        TODO: document(?)
-        Saving the input image, the anomaly map, the AM on the IMG, with an option of also saving the Ground Truth.
+        Saving the input image, the anomaly map, the AM on the IMG, 
+        with an option of also saving the Ground Truth.
         """
         if anomaly_map.shape != input_img.shape:
             anomaly_map = cv2.resize(
@@ -151,7 +145,7 @@ class BaseAlgo(pl.LightningModule):
             cv2.imwrite(os.path.join(
                 self.sample_path, f'score{score:.2f}_{x_type}_{file_name}_gt.jpg'), gt_img)
 
-    # TODO: check if can delete since we only "test" (it's an override method so we should proceed with caution)
+
     def train_dataloader(self):
         """
         Basically a method for getting the dataloader for the training phase
@@ -175,7 +169,7 @@ class BaseAlgo(pl.LightningModule):
                     self.train_datasets)-self.hparams.max_train_imgs],
                 generator=torch.Generator().manual_seed(self.hparams.seed))[0]
         train_loader = DataLoader(self.train_datasets, batch_size=self.hparams.batch_size,
-                                  shuffle=True, num_workers=0)  # , pin_memory=True)
+                                  shuffle=True, num_workers=0, pin_memory=True)
         return train_loader
 
     def test_dataloader(self):
@@ -207,21 +201,21 @@ class BaseAlgo(pl.LightningModule):
                 [self.hparams.max_test_imgs, len(
                     self.test_datasets)-self.hparams.max_test_imgs],
                 generator=torch.Generator().manual_seed(self.hparams.seed))[0]
-        # , pin_memory=True) # only work on batch_size=1, now.
+
         test_loader = DataLoader(
-            self.test_datasets, batch_size=1, shuffle=False, num_workers=0)
+            self.test_datasets, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
 
         return test_loader
 
     def predict_dataloader(self):
         """
-        TODO: Document.
+        Most likely irrelevant, but left untouched for future generations.
         """
         predict_dataset = FolderDataset(
             self.hparams.dataset_path, self.data_transforms)
-        # , pin_memory=True) # only work on batch_size=1, now.
+
         predict_loader = DataLoader(
-            predict_dataset, batch_size=1, shuffle=False, num_workers=0)
+            predict_dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
         return predict_loader
 
     def configure_optimizers(self):
@@ -269,7 +263,7 @@ class BaseAlgo(pl.LightningModule):
         '''
         pass
 
-    # TODO: implement and verify using our own model.
+
     def test_step(self, batch, batch_idx):
         """
         The Business Logic (BL) of every test step.
