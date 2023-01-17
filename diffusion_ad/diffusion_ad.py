@@ -20,6 +20,7 @@ class DiffusionAD(BaseAlgo):
 
     def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, hparams):
         assert all(param in hparams for param in DIFFUSION_AD_REQUIRED_HPARAMS)
+
         super().__init__(hparams)
         if 'verbosity' not in self.hparams.keys():
             self.hparams['verbosity'] = 0

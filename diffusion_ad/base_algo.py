@@ -119,7 +119,6 @@ class BaseAlgo(pl.LightningModule):
     # TODO: check if can delete since we only "test" (it's an override method so we should proceed with caution)
     def train_dataloader(self):
         """
-        TODO: Document.
         Basically a method for getting the dataloader for the training phase
         """
         if self.train_list:
@@ -146,10 +145,9 @@ class BaseAlgo(pl.LightningModule):
 
     def test_dataloader(self):
         """
-        TODO: Document.
         Basically a method for getting the dataloader for the test phase
         """
-        if self.hparams.test_on_train_data:  # TODO: didn't Elli said it's a big no-no?
+        if self.hparams.test_on_train_data:
             if os.path.isfile(os.path.join(self.hparams.dataset_path, f'train_{self.hparams.category}.csv')):
                 self.test_datasets = FilelistDataset(root=self.hparams.dataset_path,
                                                         transform=self.data_transforms,
@@ -166,7 +164,6 @@ class BaseAlgo(pl.LightningModule):
                                                         phase='test',
                                                         category=self.hparams.category)
             else:
-                # TODO: investigate if this is the only option we need to use
                 self.test_datasets = MVTecDataset(root=os.path.join(
                     self.hparams.dataset_path, self.hparams.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
         if self.hparams.max_test_imgs and self.hparams.max_test_imgs < len(self.test_datasets):
@@ -197,8 +194,7 @@ class BaseAlgo(pl.LightningModule):
 
     def on_train_start(self):
         """
-        TODO: Document.
-        Probably invoked right before training phase and only once per training batch(?)
+        Invoked right before training phase and only once per training epoch.
         """
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
             self.logger.log_dir)
@@ -209,7 +205,6 @@ class BaseAlgo(pl.LightningModule):
             f.write(str(self.hparams))
             f.write('\n')
 
-    # TODO: should be implemented (Written by Elli) but, shouldn't we implement the test phase alone?
     def training_step(self, batch, batch_idx):  # save locally aware patch features
         pass
 
@@ -218,8 +213,7 @@ class BaseAlgo(pl.LightningModule):
 
     def on_test_start(self):
         """
-        TODO: Document.
-        Probably invoked right before test phase and only once per test batch(?)
+        Invoked right before test phase and only once per test epoch (there is only one test epoch).
         """
         self.init_results_list()
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
@@ -243,9 +237,8 @@ class BaseAlgo(pl.LightningModule):
     # TODO: implement and verify using our own model.
     def test_step(self, batch, batch_idx):
         """
-        TODO: Document.
         The Business Logic (BL) of every test step.
-        we will eventually call _ from here for every test image in a batch
+        we will eventually call predict_scores from here for every test image in the test set.
         """
         x, gt, label, file_name, x_type, img_path = batch
         score, anomaly_map = self.predict_scores(x, x_type)
