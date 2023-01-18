@@ -9,11 +9,9 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
 import cv2
-from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, syntheticListDataset, FolderDataset
+from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
 from utils.transforms import get_transforms
-
-MAGIC_INV_NORMALIZE_MEAN = [-0.485/0.229, -0.456/0.224, -0.406/0.255]
-MAGIC_INV_NORMALIZE_STD = [1/0.229, 1/0.224, 1/0.255]
+from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD
 
 
 def copy_files(src, dst, ignores=[]):
@@ -94,13 +92,24 @@ class BaseAlgo(pl.LightningModule):
 
     def __init__(self, hparams):
         super(BaseAlgo, self).__init__()
-        self.hparams = hparams
+        self.args = hparams
+        if 'mean_train' not in self.args:
+            self.args.mean_train = MAGIC_NORMALIZE_MEAN
+        if 'std_train' not in self.args:
+            self.args.std_train = MAGIC_NORMALIZE_STD
+        if 'augment' not in self.args:
+            self.args.augment = ['basic']
+        if 'test_on_train_data' not in self.args:
+            self.args.test_on_train_data = False
+        if 'max_test_imgs' not in self.args:
+            self.args.max_test_imgs = 0  # Unlimited
+
         self.save_hyperparameters(hparams)
         self.init_results_list()
 
-        self.train_data_transforms, self.data_transforms, self.gt_transforms = get_transforms(self.hparams)
+        self.train_data_transforms, self.data_transforms, self.gt_transforms = get_transforms(self.args)
 
-        self.inv_normalize = transforms.Normalize(mean=MAGIC_INV_NORMALIZE_MEAN, std=MAGIC_INV_NORMALIZE_STD)
+        self.inv_normalize = transforms.Normalize(mean=(1 / self.args.mean_train), std=(1 / self.args.std_train))
 
         self.train_list = []
 
@@ -138,12 +147,12 @@ class BaseAlgo(pl.LightningModule):
         cv2.imwrite(os.path.join(self.sample_path,
                     f'score{score:.2f}_{x_type}_{file_name}.jpg'), input_img)
         cv2.imwrite(os.path.join(
-            self.sample_path, f'score{score:.2f}_{x_type}_{file_name}_amap.jpg'), anomaly_map_norm_hm)
+            self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap.jpg'), anomaly_map_norm_hm)
         cv2.imwrite(os.path.join(
-            self.sample_path, f'score{score:.2f}_{x_type}_{file_name}_amap_on_img.jpg'), hm_on_img)
+            self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap_on_img.jpg'), hm_on_img)
         if gt_img is not None:
             cv2.imwrite(os.path.join(
-                self.sample_path, f'score{score:.2f}_{x_type}_{file_name}_gt.jpg'), gt_img)
+                self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_gt.jpg'), gt_img)
 
 
     def train_dataloader(self):
@@ -152,23 +161,23 @@ class BaseAlgo(pl.LightningModule):
         """
         if self.train_list:
             self.train_datasets = ListDataset(
-                self.hparams.dataset_path, self.train_data_transforms, self.train_list)
+                self.args.dataset_path, self.train_data_transforms, self.train_list)
         else:
-            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'train_{self.hparams.category}.csv')):
-                self.train_datasets = FilelistDataset(root=self.hparams.dataset_path,
+            if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
+                self.train_datasets = FilelistDataset(root=self.args.dataset_path,
                                                       transform=self.train_data_transforms,
                                                       phase='train',
-                                                      category=self.hparams.category)
+                                                      category=self.args.category)
             else:
                 self.train_datasets = MVTecDataset(root=os.path.join(
-                    self.hparams.dataset_path, self.hparams.category), transform=self.train_data_transforms, gt_transform=self.gt_transforms, phase='train')
-        if self.hparams.max_train_imgs and self.hparams.max_train_imgs < len(self.train_datasets):
+                    self.args.dataset_path, self.args.category), transform=self.train_data_transforms, gt_transform=self.gt_transforms, phase='train')
+        if self.args.max_train_imgs and self.args.max_train_imgs < len(self.train_datasets):
             self.train_datasets = torch.utils.data.random_split(
                 self.train_datasets,
-                [self.hparams.max_train_imgs, len(
-                    self.train_datasets)-self.hparams.max_train_imgs],
-                generator=torch.Generator().manual_seed(self.hparams.seed))[0]
-        train_loader = DataLoader(self.train_datasets, batch_size=self.hparams.batch_size,
+                [self.args.max_train_imgs, len(
+                    self.train_datasets)-self.args.max_train_imgs],
+                generator=torch.Generator().manual_seed(self.args.seed))[0]
+        train_loader = DataLoader(self.train_datasets, batch_size=self.args.batch_size,
                                   shuffle=True, num_workers=0, pin_memory=True)
         return train_loader
 
@@ -176,34 +185,34 @@ class BaseAlgo(pl.LightningModule):
         """
         Basically a method for getting the dataloader for the test phase
         """
-        if self.hparams.test_on_train_data:
-            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'train_{self.hparams.category}.csv')):
-                self.test_datasets = FilelistDataset(root=self.hparams.dataset_path,
+        if self.args.test_on_train_data:
+            if os.path.isfile(os.path.join(self.args.dataset_path, f'train_{self.args.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.args.dataset_path,
                                                         transform=self.data_transforms,
                                                         phase='train',
-                                                        category=self.hparams.category)
+                                                        category=self.args.category)
             else:
-                self.test_datasets = MVTecDataset(root=os.path.join(self.hparams.dataset_path, self.hparams.category),
+                self.test_datasets = MVTecDataset(root=os.path.join(self.args.dataset_path, self.args.category),
                                                     transform=self.data_transforms, gt_transform=self.gt_transforms,
                                                     phase='train')
         else:
-            if os.path.isfile(os.path.join(self.hparams.dataset_path, f'test_{self.hparams.category}.csv')):
-                self.test_datasets = FilelistDataset(root=self.hparams.dataset_path,
+            if os.path.isfile(os.path.join(self.args.dataset_path, f'test_{self.args.category}.csv')):
+                self.test_datasets = FilelistDataset(root=self.args.dataset_path,
                                                         transform=self.data_transforms,
                                                         phase='test',
-                                                        category=self.hparams.category)
+                                                        category=self.args.category)
             else:
                 self.test_datasets = MVTecDataset(root=os.path.join(
-                    self.hparams.dataset_path, self.hparams.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
-        if self.hparams.max_test_imgs and self.hparams.max_test_imgs < len(self.test_datasets):
+                    self.args.dataset_path, self.args.category), transform=self.data_transforms, gt_transform=self.gt_transforms, phase='test')
+        if self.args.max_test_imgs and self.args.max_test_imgs < len(self.test_datasets):
             self.test_datasets = torch.utils.data.random_split(
                 self.test_datasets,
-                [self.hparams.max_test_imgs, len(
-                    self.test_datasets)-self.hparams.max_test_imgs],
-                generator=torch.Generator().manual_seed(self.hparams.seed))[0]
+                [self.args.max_test_imgs, len(
+                    self.test_datasets)-self.args.max_test_imgs],
+                generator=torch.Generator().manual_seed(self.args.seed))[0]
 
         test_loader = DataLoader(
-            self.test_datasets, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
+            self.test_datasets, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
 
         return test_loader
 
@@ -212,7 +221,7 @@ class BaseAlgo(pl.LightningModule):
         Most likely irrelevant, but left untouched for future generations.
         """
         predict_dataset = FolderDataset(
-            self.hparams.dataset_path, self.data_transforms)
+            self.args.dataset_path, self.data_transforms)
 
         predict_loader = DataLoader(
             predict_dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
@@ -227,11 +236,11 @@ class BaseAlgo(pl.LightningModule):
         """
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
             self.logger.log_dir)
-        if self.hparams.saved_model_path:
-            self.output_path = self.hparams.saved_model_path
+        if self.args.saved_model_path:
+            self.output_path = self.args.saved_model_path
         os.makedirs(self.output_path, exist_ok=True)
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'w') as f:
-            f.write(str(self.hparams))
+            f.write(str(self.args))
             f.write('\n')
 
     def training_step(self, batch, batch_idx):  # save locally aware patch features
@@ -247,11 +256,11 @@ class BaseAlgo(pl.LightningModule):
         self.init_results_list()
         self.output_path, self.sample_path, self.source_code_save_path = prep_dirs(
             self.logger.log_dir)
-        if self.hparams.saved_model_path:
-            self.output_path = self.hparams.saved_model_path
+        if self.args.saved_model_path:
+            self.output_path = self.args.saved_model_path
 
     @abstractmethod
-    def predict_scores(self, x, category: str):
+    def predict_scores(self, x):
         '''
         Should be implemented by the spesific algo for computing test time score prediction.
         Returns per pixel scores (B,H,W) and image scores (B,) (numpy arrays).
@@ -270,7 +279,7 @@ class BaseAlgo(pl.LightningModule):
         we will eventually call predict_scores from here for every test image in the test set.
         """
         x, gt, label, file_name, x_type, img_path = batch
-        score, anomaly_map = self.predict_scores(x, x_type)
+        anomaly_map, score = self.predict_scores(x)
         score = score[0]  # assuming test_batch_size==1
         anomaly_map = anomaly_map[0]  # test_batch_size==1
 
@@ -278,14 +287,14 @@ class BaseAlgo(pl.LightningModule):
             gt_np = (gt.cpu().numpy()[0, 0] > 0).astype(int)
             self.gt_list_px_lvl.extend(gt_np.ravel())
         else:  # either good image or no pixel level GT
-            gt_np = np.zeros((self.hparams.input_size, self.hparams.input_size))
+            gt_np = np.zeros((self.args.input_size, self.args.input_size))
             if gt[0] == -1:  # no pixel level GT
                 self.gt_list_px_lvl.extend([0])
             else:
                 self.gt_list_px_lvl.extend(gt_np.ravel())
 
         anomaly_map_resized = cv2.resize(
-            anomaly_map, (self.hparams.input_size, self.hparams.input_size))
+            anomaly_map, (self.args.input_size, self.args.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
 
@@ -298,7 +307,7 @@ class BaseAlgo(pl.LightningModule):
         x = self.inv_normalize(x)
         input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[
                                0]*255, cv2.COLOR_BGR2RGB)
-        if not self.hparams.dont_save_images:
+        if self.args.save_anomaly_map:
             self.save_anomaly_map(
                 anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
 
@@ -309,7 +318,7 @@ class BaseAlgo(pl.LightningModule):
         called after 1 epoch (which contains many steps).
         """
         pixel_auc = -1
-        # if not self.hparams.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
+        # if not self.args.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
         if any(self.gt_list_px_lvl):
             print("Total pixel-level auc-roc score :")
             pixel_auc = roc_auc_score(
@@ -325,7 +334,7 @@ class BaseAlgo(pl.LightningModule):
             img_auc = max(self.pred_list_img_lvl)
             print(img_auc)
         print('test_epoch_end')
-        self.values = {'pixel_auc': pixel_auc, 'img_auc': img_auc}
+        self.values = {'pixel_auc': float(pixel_auc), 'img_auc': float(img_auc)}
         self.log_dict(self.values)
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
