@@ -1,5 +1,5 @@
 import random
-import torch
+from copy import deepcopy
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
 
@@ -45,7 +45,7 @@ def get_transforms(args):
     train_transforms = []
     for  augment in args.augment:
         if augment == 'basic':
-            train_transforms.append(test_transforms)
+            train_transforms = deepcopy(test_transforms)
         
         elif augment == 'rigid':
             train_transforms.append(transforms.Compose([
