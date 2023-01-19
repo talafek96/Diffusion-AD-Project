@@ -134,8 +134,9 @@ class BaseAlgo(pl.LightningModule):
             anomaly_map = cv2.resize(
                 anomaly_map, (input_img.shape[0], input_img.shape[1]))
         # anomaly_map_norm = min_max_norm(anomaly_map)
-        anomaly_map_norm = (anomaly_map-1) / 3.5
-        anomaly_map_norm[anomaly_map_norm > 0.9] = 0.9
+        # anomaly_map_norm = (anomaly_map-1) / 3.5
+        # anomaly_map_norm[anomaly_map_norm > 0.9] = 0.9
+        anomaly_map_norm = anomaly_map
         anomaly_map_norm_hm = cvt2heatmap(anomaly_map_norm*255)
 
         # anomaly map on image
