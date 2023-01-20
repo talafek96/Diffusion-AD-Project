@@ -1,7 +1,8 @@
 import random
+import torch
 from copy import deepcopy
 from torchvision import transforms
-from PIL import Image
+from torchvision.transforms.functional import InterpolationMode
 
 
 class TwoCropsTransform:
@@ -28,11 +29,11 @@ class TwoCropsTransform:
 
 def get_transforms(args):
     test_transforms = transforms.Compose([
-        transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
-        transforms.ToTensor(),
+        transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
+        lambda pic: transforms.ToTensor()(pic) if not isinstance(pic, torch.Tensor) else pic,
         transforms.CenterCrop(args.input_size),
-        transforms.Normalize(mean=args.mean_train,
-                             std=args.std_train)])
+        transforms.Normalize(mean=args.mean_train, std=args.std_train),
+        lambda img: (2 * ((img - img.min()) / (img.max() - img.min())) - 1)])
     gt_transforms = transforms.Compose([
         transforms.Resize((args.load_size, args.load_size)),
         transforms.ToTensor(),
@@ -52,7 +53,7 @@ def get_transforms(args):
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(90,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -61,7 +62,7 @@ def get_transforms(args):
         elif augment == 'non_rigid':
             train_transforms.append(transforms.Compose([
                 transforms.RandomPerspective(p=1,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -73,7 +74,7 @@ def get_transforms(args):
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(90, fill=args.fill_value),
                 transforms.RandomPerspective(p=1,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -90,7 +91,7 @@ def get_transforms(args):
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(90, fill=args.fill_value),
                 transforms.RandomPerspective(p=1,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -106,7 +107,7 @@ def get_transforms(args):
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(90, fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train, std=args.std_train)
@@ -120,7 +121,7 @@ def get_transforms(args):
                 transforms.RandomAdjustSharpness(0.5, p=0.3),
                 transforms.RandomAutocontrast(p=0.3),
                 transforms.RandomPerspective(p=1,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -133,7 +134,7 @@ def get_transforms(args):
                 transforms.RandomAdjustSharpness(2, p=0.3),
                 transforms.RandomAdjustSharpness(0.5, p=0.3),
                 transforms.RandomAutocontrast(p=0.3),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -146,7 +147,7 @@ def get_transforms(args):
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomPerspective(p=0.8,fill=args.fill_value),
                 transforms.RandomRotation(90,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
@@ -170,7 +171,7 @@ def get_transforms(args):
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomPerspective(p=0.8,fill=args.fill_value),
                 transforms.RandomRotation(90,fill=args.fill_value)])
-            trans.extend([transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+            trans.extend([transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train, std=args.std_train)])
@@ -187,15 +188,12 @@ def get_transforms(args):
                 raise NotImplementedError
             train_transforms.append(transforms.Compose([
                 transforms.AutoAugment(policy=policy,fill=args.fill_value),
-                transforms.Resize((args.load_size, args.load_size), Image.ANTIALIAS),
+                transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomCrop(args.input_size),
                 transforms.Normalize(mean=args.mean_train,
                                      std=args.std_train)]))
         else:
             raise NotImplementedError
-
-    if len(train_transforms)==1:
-        train_transforms = train_transforms[0]
 
     return train_transforms, test_transforms, gt_transforms

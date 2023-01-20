@@ -1,14 +1,17 @@
 import os
 import numpy as np
 from argparse import Namespace
+import numpy as np
 
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.1)
-_DEFAULT_RECON_BATCH_SIZE = 5
+_DEFAULT_RECON_BATCH_SIZE = 16
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 
-MAGIC_NORMALIZE_MEAN = np.array([-0.229/0.485, -0.224/0.456, -0.255/0.406])
-MAGIC_NORMALIZE_STD = np.array([0.229, 0.224, 0.255])
+MAGIC_NORMALIZE_MEAN = np.array((0.5, 0.5, 0.5))  # np.array([0.485, 0.456, 0.406])
+MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255])
+UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
+DEFAULT_AUGMENT_NAME = ['basic']
 
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
@@ -37,6 +40,7 @@ DIFFUSION_AD_HPARAMS = Namespace(**{
     'load_size': 256,
     'input_size': 256,
     'root_output_dir': os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME)),
+    'augment': DEFAULT_AUGMENT_NAME,
     'save_anomaly_map': True
 })
 
@@ -64,7 +68,7 @@ CATEGORY_TO_V_MIN_MAX = {
     'capsule': (0.04, 0.08),
     'carpet': _DEFAULT_V_MIN_MAX,
     'grid': (0.025, 0.09),
-    'hazelnut': (0.02, 0.08),
+    'hazelnut': (0.02, 0.27),
     'leather': _DEFAULT_V_MIN_MAX,
     'metal_nut': _DEFAULT_V_MIN_MAX,
     'pill': _DEFAULT_V_MIN_MAX,
