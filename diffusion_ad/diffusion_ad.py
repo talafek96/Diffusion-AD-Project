@@ -24,6 +24,7 @@ class DiffusionAD(BaseAlgo):
 
         if 'verbosity' not in self.args:
             self.args.verbosity = 0
+            
         self.args.saved_model_path = None
 
         # Initiate members
@@ -70,6 +71,7 @@ class DiffusionAD(BaseAlgo):
 
         # Noise and reconstruct `batch_size` times and aggregate into a batch
         iterations = tqdm(range(batch_size))
+        
         for i in iterations:
             iterations.set_description(f'Reconstructions Done {i}/{self.args.reconstruction_batch_size}', refresh=True)
 

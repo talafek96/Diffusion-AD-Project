@@ -93,6 +93,7 @@ class BaseAlgo(pl.LightningModule):
     def __init__(self, hparams):
         super(BaseAlgo, self).__init__()
         self.args = hparams
+        
         if 'mean_train' not in self.args:
             self.args.mean_train = MAGIC_NORMALIZE_MEAN
         if 'std_train' not in self.args:
@@ -341,8 +342,10 @@ class BaseAlgo(pl.LightningModule):
             print("Maximal anomaly score:")
             img_auc = max(self.pred_list_img_lvl)
             print(img_auc)
+            
         print('test_epoch_end')
         self.values = {'pixel_auc': float(pixel_auc), 'img_auc': float(img_auc)}
         self.log_dict(self.values)
+        
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))

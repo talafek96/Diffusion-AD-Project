@@ -23,7 +23,7 @@ DIFFUSION_AD_REQUIRED_HPARAMS = [
     'load_size',
     'input_size',
     'root_output_dir',
-    'save_anomaly_map',
+    'save_anomaly_map'
 ]
 
 DIFFUSION_AD_HPARAMS = Namespace(**{
