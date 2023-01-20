@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter
 import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
 from utils.transforms import get_transforms
-from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX
+from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, UNLIMITED_MAX_TEST_IMAGES
 
 
 def copy_files(src, dst, ignores=[]):
@@ -99,11 +99,11 @@ class BaseAlgo(pl.LightningModule):
         if 'std_train' not in self.args:
             self.args.std_train = MAGIC_NORMALIZE_STD
         if 'augment' not in self.args:
-            self.args.augment = ['basic']
+            self.args.augment = DEFAULT_AUGMENT_NAME
         if 'test_on_train_data' not in self.args:
             self.args.test_on_train_data = False
         if 'max_test_imgs' not in self.args:
-            self.args.max_test_imgs = 0  # Unlimited
+            self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -134,22 +134,18 @@ class BaseAlgo(pl.LightningModule):
         if anomaly_map.shape != input_img.shape:
             anomaly_map = cv2.resize(
                 anomaly_map, (input_img.shape[0], input_img.shape[1]))
-        # anomaly_map_norm = min_max_norm(anomaly_map)
-        # anomaly_map_norm = (anomaly_map-1) / 3.5
-        # anomaly_map_norm[anomaly_map_norm > 0.9] = 0.9
-        anomaly_map_norm = anomaly_map
-        anomaly_map_norm_hm = cvt2heatmap(anomaly_map_norm*255)
 
-        # anomaly map on image
-        heatmap = cvt2heatmap(anomaly_map_norm*255)
-        hm_on_img = heatmap_on_image(heatmap, input_img)
+        anomaly_map_hm = cvt2heatmap(anomaly_map*255)
 
-        # save images
+        # Calculate anomaly map on image
+        hm_on_img = heatmap_on_image(anomaly_map_hm, input_img)
+
+        # Save images
         score = float(score)
         cv2.imwrite(os.path.join(self.sample_path,
                     f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}.jpg'), input_img)
         cv2.imwrite(os.path.join(
-            self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap.jpg'), anomaly_map_norm_hm)
+            self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap.jpg'), anomaly_map_hm)
         cv2.imwrite(os.path.join(
             self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap_on_img.jpg'), hm_on_img)
         if gt_img is not None:
@@ -305,7 +301,7 @@ class BaseAlgo(pl.LightningModule):
             anomaly_map, (self.args.input_size, self.args.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
-        anomaly_map_resized_blur = anomaly_map_resized
+        anomaly_map_resized_blur = anomaly_map_resized  # TODO: Check if blurring the anomaly map works better or worse
 
         self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
 

@@ -32,8 +32,7 @@ def get_transforms(args):
         transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
         lambda pic: transforms.ToTensor()(pic) if not isinstance(pic, torch.Tensor) else pic,
         transforms.CenterCrop(args.input_size),
-        transforms.Normalize(mean=args.mean_train,
-                             std=args.std_train),
+        transforms.Normalize(mean=args.mean_train, std=args.std_train),
         lambda img: (2 * ((img - img.min()) / (img.max() - img.min())) - 1)])
     gt_transforms = transforms.Compose([
         transforms.Resize((args.load_size, args.load_size)),

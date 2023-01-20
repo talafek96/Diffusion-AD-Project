@@ -149,7 +149,7 @@ class DiffusionAD(BaseAlgo):
         """
         num_timesteps = CATEGORY_TO_NOISE_TIMESTEPS[self.args.category]
         img = self.data_transforms(img.squeeze(0).squeeze(0))
-        # img = 2 * ((img - img.min()) / (img.max() - img.min())) - 1  # Normalize to the dynamic range of (-1, 1)
+
         print("img min:", img.min(), "img max:", img.max())
 
         if self.args.verbosity >= 2:
