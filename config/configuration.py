@@ -5,11 +5,11 @@ import numpy as np
 
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.1)
-_DEFAULT_RECON_BATCH_SIZE = 5
+_DEFAULT_RECON_BATCH_SIZE = 3
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 
-MAGIC_NORMALIZE_MEAN = np.array([-0.229/0.485, -0.224/0.456, -0.255/0.406])
-MAGIC_NORMALIZE_STD = np.array([0.229, 0.224, 0.255])
+MAGIC_NORMALIZE_MEAN = np.array((0.5, 0.5, 0.5))  # np.array([0.485, 0.456, 0.406])
+MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255])
 
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
@@ -65,7 +65,7 @@ CATEGORY_TO_V_MIN_MAX = {
     'capsule': (0.04, 0.08),
     'carpet': _DEFAULT_V_MIN_MAX,
     'grid': (0.025, 0.09),
-    'hazelnut': (0.02, 0.08),
+    'hazelnut': (0.02, 0.27),
     'leather': _DEFAULT_V_MIN_MAX,
     'metal_nut': _DEFAULT_V_MIN_MAX,
     'pill': _DEFAULT_V_MIN_MAX,

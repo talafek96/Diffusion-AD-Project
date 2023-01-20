@@ -82,15 +82,13 @@ class DiffusionAD(BaseAlgo):
 
             if interactive_print:
                 print(f'Reconstructed image No. {i + 1}:')
-                reconstructed_image_cpu = (
-                    (reconstructed_image.squeeze(0).cpu() / 2) + 0.5).clip(0, 1)
-                plt.imshow(reconstructed_image_cpu.permute(1, 2, 0))
+                reconstructed_image_to_print = (reconstructed_image.squeeze(0).cpu() / 2) + 0.5  # Transform into the dynamic range (0, 1)
+                plt.imshow(reconstructed_image_to_print.permute(1, 2, 0))
                 plt.show()
             
             iterations.set_description(f'Reconstructions Done {i + 1}/{self.args.reconstruction_batch_size}', refresh=True)
 
-        reconstructed_batch.append(
-            ((reconstructed_image.squeeze(0) / 2) + 0.5).clip(0, 1))
+            reconstructed_batch.append(reconstructed_image.squeeze(0))
 
         # Aggregate results into a single tensor
         device = reconstructed_batch[0].device
@@ -148,13 +146,25 @@ class DiffusionAD(BaseAlgo):
         `anomaly_map` : ndarray (B, H, W), `image_score` : ndarray (B,)
         """
         num_timesteps = CATEGORY_TO_NOISE_TIMESTEPS[self.args.category]
-        reconstructed_images = self.get_reconstructed_batch(img.squeeze(0),
+        img = self.data_transforms(img.squeeze(0).squeeze(0))
+        # img = 2 * ((img - img.min()) / (img.max() - img.min())) - 1  # Normalize to the dynamic range of (-1, 1)
+        print("img min:", img.min(), "img max:", img.max())
+
+        if self.args.verbosity >= 2:
+            # Show the transformed input image
+            image_to_print = (img.cpu() / 2) + 0.5
+            print('Transformed input image:')
+            plt.imshow(image_to_print.permute(1, 2, 0))
+            plt.show()
+
+        reconstructed_images = self.get_reconstructed_batch(img,
                                                             self.noiser,
                                                             self.denoiser,
                                                             num_timesteps,
                                                             self.args.reconstruction_batch_size,
                                                             interactive_print=self.args.verbosity >= 2)
-        anomaly_map, anomaly_score = self.evaluate_anomaly(img.squeeze(0),
+
+        anomaly_map, anomaly_score = self.evaluate_anomaly(img,
                                                            reconstructed_images,
                                                            self.anomaly_map_generator,
                                                            self.anomaly_scorer)

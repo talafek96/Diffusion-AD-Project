@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter
 import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
 from utils.transforms import get_transforms
-from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD
+from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX
 
 
 def copy_files(src, dst, ignores=[]):
@@ -109,7 +109,7 @@ class BaseAlgo(pl.LightningModule):
 
         self.train_data_transforms, self.data_transforms, self.gt_transforms = get_transforms(self.args)
 
-        self.inv_normalize = transforms.Normalize(mean=(1 / self.args.mean_train), std=(1 / self.args.std_train))
+        self.inv_normalize = transforms.Normalize(mean=(-self.args.mean_train / self.args.std_train), std=(1 / self.args.std_train))
 
         self.train_list = []
 
@@ -146,7 +146,7 @@ class BaseAlgo(pl.LightningModule):
         # save images
         score = float(score)
         cv2.imwrite(os.path.join(self.sample_path,
-                    f'score{score:.2f}_{x_type}_{file_name}.jpg'), input_img)
+                    f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}.jpg'), input_img)
         cv2.imwrite(os.path.join(
             self.sample_path, f'{self.args.category}_{x_type}_score{score:.2f}_{file_name}_amap.jpg'), anomaly_map_norm_hm)
         cv2.imwrite(os.path.join(
@@ -282,7 +282,7 @@ class BaseAlgo(pl.LightningModule):
         x, gt, label, file_name, x_type, img_path = batch
         anomaly_map, score = self.predict_scores(x)
         score = score[0]  # assuming test_batch_size==1
-        anomaly_map = anomaly_map[0]  # test_batch_size==1
+        print(f'Anomaly Map values:\nvmin={anomaly_map.min()}, vmax={anomaly_map.max()}')
 
         if len(gt.shape) == 4:
             gt_np = (gt.cpu().numpy()[0, 0] > 0).astype(int)
@@ -294,10 +294,17 @@ class BaseAlgo(pl.LightningModule):
             else:
                 self.gt_list_px_lvl.extend(gt_np.ravel())
 
+        # Normalize anomaly map
+        vmin, vmax = CATEGORY_TO_V_MIN_MAX[self.args.category]
+        anomaly_map = (anomaly_map - vmin) / (vmax - vmin)
+        anomaly_map = anomaly_map.clip(0, 1)
+
+        # Resize and blur for noise reduction
         anomaly_map_resized = cv2.resize(
             anomaly_map, (self.args.input_size, self.args.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
+        anomaly_map_resized_blur = anomaly_map_resized
 
         self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
 

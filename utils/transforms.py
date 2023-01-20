@@ -1,4 +1,5 @@
 import random
+import torch
 from copy import deepcopy
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
@@ -29,10 +30,11 @@ class TwoCropsTransform:
 def get_transforms(args):
     test_transforms = transforms.Compose([
         transforms.Resize((args.load_size, args.load_size), InterpolationMode.BICUBIC),
-        transforms.ToTensor(),
+        lambda pic: transforms.ToTensor()(pic) if not isinstance(pic, torch.Tensor) else pic,
         transforms.CenterCrop(args.input_size),
         transforms.Normalize(mean=args.mean_train,
-                             std=args.std_train)])
+                             std=args.std_train),
+        lambda img: (2 * ((img - img.min()) / (img.max() - img.min())) - 1)])
     gt_transforms = transforms.Compose([
         transforms.Resize((args.load_size, args.load_size)),
         transforms.ToTensor(),
@@ -194,8 +196,5 @@ def get_transforms(args):
                                      std=args.std_train)]))
         else:
             raise NotImplementedError
-
-    if len(train_transforms)==1:
-        train_transforms = train_transforms[0]
 
     return train_transforms, test_transforms, gt_transforms
