@@ -12,6 +12,8 @@ MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255
 UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
 DEFAULT_AUGMENT_NAME = ['basic']
 
+DEFAULT_RESULTS_PATH = '$PATH/results.csv'  # TODO: update to the desired path, obviously.
+
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
     'anomaly_map_generator_kwargs', 
