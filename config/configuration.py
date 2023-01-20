@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from argparse import Namespace
-import numpy as np
 
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.1)
