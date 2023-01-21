@@ -7,6 +7,7 @@ _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.1)
 _DEFAULT_RECON_BATCH_SIZE = 16
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
+_DEFAULT_RESULTS_CSV = 'results.csv'
 
 # Magic constants
 MAGIC_NORMALIZE_MEAN = np.array((0.5, 0.5, 0.5))  # np.array([0.485, 0.456, 0.406])
@@ -15,7 +16,9 @@ MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255
 # Public default constants
 UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
 DEFAULT_AUGMENT_NAME = ['basic']
-DEFAULT_RESULTS_PATH = '$PATH/results.csv'  # TODO: update to the desired path, obviously.
+DEFAULT_DATASET_PATH = os.path.abspath(os.path.join(__file__, '..', '..', 'extern', 'mvtec'))
+DEFAULT_ROOT_OUTPUT_DIR = os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME))
+DEFAULT_RESULTS_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
 
 # Public datastructures
 
@@ -40,12 +43,12 @@ DIFFUSION_AD_HPARAMS = Namespace(**{
     'anomaly_scorer_kwargs': {},
     'phase': 'test',
     'category': 'hazelnut',
-    'dataset_path': os.path.abspath(os.path.join(__file__, '..', '..', 'extern', 'mvtec')),
+    'dataset_path': DEFAULT_DATASET_PATH,
     'num_epochs': 1,
     'batch_size': 1,
     'load_size': 256,
     'input_size': 256,
-    'root_output_dir': os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME)),
+    'root_output_dir': DEFAULT_ROOT_OUTPUT_DIR,
     'augment': DEFAULT_AUGMENT_NAME,
     'save_anomaly_map': True
 })

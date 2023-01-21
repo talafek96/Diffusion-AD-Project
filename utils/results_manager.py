@@ -1,59 +1,66 @@
-from pandas import DataFrame, read_csv
+import os
 from typing import Set
+from pandas import DataFrame, read_csv
 from config.configuration import CATEGORY_TO_NOISE_TIMESTEPS, DEFAULT_RESULTS_PATH
 
 
-CATEGORIES = set(CATEGORY_TO_NOISE_TIMESTEPS.keys())  # since keys() returns a view and not a set
+ALL_CATEGORIES = set(CATEGORY_TO_NOISE_TIMESTEPS.keys())  # since keys() returns a view and not a set
 
 
 class ResultsManager:
     """
     A logging class managing loading, updating and storing the experiments results.
+
+    Usage:
+
+    Init:
+    >>> results_manager = ResultsManager(csv_path)
+
+    Getting the current results DataFrame:
+    >>> results = results_manager.results
+
+    Updating the results DataFrame presistently:
+    >>> results_manager.results = new_results
     """
+    _results_df: DataFrame
+
     path: str
     is_loaded: bool
-    results: DataFrame
 
-    # SUGGESTION:
-    # TODO: perhaps we want to make results a persistent @property such that:
-    #       'get'-ing the value will read the results file and
-    #       'set'-ing the value will update the results file.
-    #       
-    #       it will be really cool
+    @property
+    def results(self) -> DataFrame:
+        if not self.is_loaded:
+            if os.path.exists(self.path):
+                self._load_results()
+            else:
+                # Note: Using the setter of the property also creates a file
+                self.results = DataFrame(columns=["category", "img_auc", "pixel_auc"])
+        
+        return self._results_df
+    
+    @results.setter
+    def results(self, value: DataFrame):
+        self._results_df = value.copy(deep=True)  # TODO: maybe we don't need a deep copy or a copy at all
+        self._update_results_file(self._results_df)
 
-    def __init__(self, path: str=DEFAULT_RESULTS_PATH):
-        self.path = path
+
+    def __init__(self, results_path: str=DEFAULT_RESULTS_PATH):
+        self.path = results_path
         self.is_loaded = False
 
-    def _get_categories_in_results_file(self) -> Set:
-        if not self.is_loaded:
-            self._load_results()
-        
-        # TODO: implement
-        # 1) Extract a set of categories from self.results
-        # 2) return the extracted set
-        pass
-
     def _load_results(self):
-        # TODO: implement:
-        # read the file
-        self.results = ()  # and fill this member
-        self.is_loaded = True
-
-    def get_remaining_categories(self) -> Set:
         """
-        Getting a set of the remaining categories that do not yet exist 
-        in the results file.
-
+        Loading the results from the csv at self.path into memory.
+        Accessible from self.results
+        
         Return:
         -------
-        A set of strings denoting the categories who don't exist in the file
+        None
         """
-        categories_in_file = self._get_categories_in_results_file()
+        self._results_df = read_csv(self.path)
+        self.is_loaded = True
 
-        return CATEGORIES - categories_in_file
-    
-    def update_results_file(self, new_results: DataFrame) -> None:
+    def _update_results_file(self, new_results: DataFrame) -> None:
         """
         Updates the results csv file with new results by first loading the results into
         memory, updating them using the given newer results, and then saving them back.
@@ -67,6 +74,41 @@ class ResultsManager:
         -------
         None
         """
+        new_results.to_csv(self.path)
 
-        # TODO: implement
-        pass
+    def _get_categories_in_results_file(self) -> Set:
+        """
+        Getting a list of the categories from the results file.
+        
+        Return: Set[str]
+        -------
+        A set of strings denoting the categories stored in the results file.
+        """
+        if not self.is_loaded:
+            self._load_results()
+        
+        categories = set(self._results_df["category"])
+        
+        return categories
+
+    def get_remaining_categories(self) -> Set:
+        """
+        Getting a set of the remaining categories that do not yet exist 
+        in the results file.
+
+        Return:
+        -------
+        A set of strings denoting the categories who don't exist in the file
+        """
+        categories_in_file = self._get_categories_in_results_file()
+
+        return ALL_CATEGORIES - categories_in_file
+
+
+def test():
+    # TODO:
+    pass
+
+
+if __name__ == '__main__':
+    test()
