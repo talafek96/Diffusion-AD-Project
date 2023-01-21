@@ -30,11 +30,7 @@ class ResultsManager:
     @property
     def results(self) -> DataFrame:
         if not self.is_loaded:
-            if os.path.exists(self.path):
-                self._load_results()
-            else:
-                # Note: Using the setter of the property also creates a file
-                self.results = DataFrame(columns=["category", "img_auc", "pixel_auc"])
+            self._load_results()
         
         return self._results_df
     
