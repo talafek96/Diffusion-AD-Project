@@ -119,12 +119,3 @@ class ResultsManager:
         categories_in_file = self._get_categories_in_results_file()
 
         return ALL_CATEGORIES - categories_in_file
-
-
-def test():
-    # TODO:
-    pass
-
-
-if __name__ == '__main__':
-    test()
