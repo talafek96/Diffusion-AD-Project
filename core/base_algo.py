@@ -354,4 +354,4 @@ class BaseAlgo(pl.LightningModule):
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        self.results_manager.results = self.results_manager.results.append(new_dict)
+        self.results_manager.results = self.results_manager.results.append(new_dict, ignore_index=True)

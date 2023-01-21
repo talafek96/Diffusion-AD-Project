@@ -17,7 +17,7 @@ class DiffusionAD(BaseAlgo):
     anomaly_map_generator: ErrorMapGenerator
     anomaly_scorer: AnomalyScorer
 
-    def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, results_manager, hparams):
+    def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, hparams):
         assert all(param in hparams for param in DIFFUSION_AD_REQUIRED_HPARAMS)
 
         super().__init__(hparams)
