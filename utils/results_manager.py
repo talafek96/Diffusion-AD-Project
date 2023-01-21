@@ -5,7 +5,7 @@ from config.configuration import CATEGORY_TO_NOISE_TIMESTEPS, DEFAULT_RESULTS_PA
 
 
 ALL_CATEGORIES = set(CATEGORY_TO_NOISE_TIMESTEPS.keys())  # since keys() returns a view and not a set
-DEFAULT_COLUMNS = ["category", "img_auc", "pixel_auc"]
+DEFAULT_COLUMNS = ["category", "category_type", "img_auc", "pixel_auc"]
 
 
 class ResultsManager:
@@ -24,7 +24,7 @@ class ResultsManager:
     Updating the results DataFrame presistently:
     >>> results_manager.results = new_results
     """
-    
+
     _results_df: DataFrame
 
     path: str

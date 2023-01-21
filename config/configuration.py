@@ -3,6 +3,8 @@ import numpy as np
 from argparse import Namespace
 
 # Hidden default constants
+_CATEGORY_TYPE_OBJECT = 'object'
+_CATEGORY_TYPE_TEXTURE = 'texture'
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 1)
 _DEFAULT_RECON_BATCH_SIZE = 16
@@ -89,4 +91,22 @@ CATEGORY_TO_V_MIN_MAX = {
     'transistor': _DEFAULT_V_MIN_MAX,
     'wood': _DEFAULT_V_MIN_MAX,
     'zipper': _DEFAULT_V_MIN_MAX
+}
+
+CATEGORY_TO_TYPE = {
+    'bottle': _CATEGORY_TYPE_OBJECT,
+    'cable': _CATEGORY_TYPE_OBJECT,
+    'capsule': _CATEGORY_TYPE_OBJECT,
+    'carpet': _CATEGORY_TYPE_TEXTURE,
+    'grid': _CATEGORY_TYPE_TEXTURE,
+    'hazelnut': _CATEGORY_TYPE_OBJECT,
+    'leather': _CATEGORY_TYPE_TEXTURE,
+    'metal_nut': _CATEGORY_TYPE_OBJECT,
+    'pill': _CATEGORY_TYPE_OBJECT,
+    'screw': _CATEGORY_TYPE_OBJECT,
+    'tile': _CATEGORY_TYPE_TEXTURE,
+    'toothbrush': _CATEGORY_TYPE_OBJECT,
+    'transistor': _CATEGORY_TYPE_OBJECT,
+    'wood': _CATEGORY_TYPE_TEXTURE,
+    'zipper': _CATEGORY_TYPE_TEXTURE
 }

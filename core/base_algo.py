@@ -12,7 +12,8 @@ import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
 from utils.results_manager import ResultsManager
 from utils.transforms import get_transforms
-from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, UNLIMITED_MAX_TEST_IMAGES
+from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
+    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE
 
 
 def copy_files(src, dst, ignores=[]):
@@ -352,4 +353,5 @@ class BaseAlgo(pl.LightningModule):
     def _update_csv(self, values_dict) -> None:
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
+        new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
         self.results_manager.results = self.results_manager.results.append(new_dict)
