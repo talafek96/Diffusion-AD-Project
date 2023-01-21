@@ -1,10 +1,11 @@
 import os
-from typing import Set
+from typing import Set, List
 from pandas import DataFrame, read_csv
 from config.configuration import CATEGORY_TO_NOISE_TIMESTEPS, DEFAULT_RESULTS_PATH
 
 
 ALL_CATEGORIES = set(CATEGORY_TO_NOISE_TIMESTEPS.keys())  # since keys() returns a view and not a set
+DEFAULT_COLUMNS = ["category", "img_auc", "pixel_auc"]
 
 
 class ResultsManager:
@@ -23,10 +24,12 @@ class ResultsManager:
     Updating the results DataFrame presistently:
     >>> results_manager.results = new_results
     """
+    
     _results_df: DataFrame
 
     path: str
     is_loaded: bool
+    columns: List[str]
 
     @property
     def results(self) -> DataFrame:
@@ -40,10 +43,10 @@ class ResultsManager:
         self._results_df = value.copy(deep=True)  # TODO: maybe we don't need a deep copy or a copy at all
         self._update_results_file(self._results_df)
 
-
-    def __init__(self, results_path: str=DEFAULT_RESULTS_PATH):
+    def __init__(self, results_path: str=DEFAULT_RESULTS_PATH, columns: List[str]=DEFAULT_COLUMNS):
         self.path = results_path
         self.is_loaded = False
+        self.columns = columns
 
     def _load_results(self):
         """
@@ -59,7 +62,7 @@ class ResultsManager:
             self.is_loaded = True
         else:
             # Note: Using the setter of the property also creates a file
-            self.results = DataFrame(columns=["category", "img_auc", "pixel_auc"])
+            self.results = DataFrame(columns=self.columns)
 
     def _update_results_file(self, new_results: DataFrame) -> None:
         """
