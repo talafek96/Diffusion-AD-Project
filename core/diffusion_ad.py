@@ -7,7 +7,7 @@ from utils.noiser import Noiser
 from utils.denoiser import Denoiser
 from utils.error_map import ErrorMapGenerator
 from utils.anomaly_scorer import AnomalyScorer
-from diffusion_ad.base_algo import BaseAlgo
+from core.base_algo import BaseAlgo
 from config.configuration import DIFFUSION_AD_REQUIRED_HPARAMS, CATEGORY_TO_NOISE_TIMESTEPS
 
 
