@@ -57,8 +57,12 @@ class ResultsManager:
         -------
         None
         """
-        self._results_df = read_csv(self.path)
-        self.is_loaded = True
+        if os.path.exists(self.path):
+            self._results_df = read_csv(self.path)
+            self.is_loaded = True
+        else:
+            # Note: Using the setter of the property also creates a file
+            self.results = DataFrame(columns=["category", "img_auc", "pixel_auc"])
 
     def _update_results_file(self, new_results: DataFrame) -> None:
         """
@@ -90,6 +94,16 @@ class ResultsManager:
         categories = set(self._results_df["category"])
         
         return categories
+
+    def reload_results(self):
+        """
+        Force reloads the results from the file.
+        
+        Return:
+        -------
+        None
+        """
+        self._load_results()
 
     def get_remaining_categories(self) -> Set:
         """
