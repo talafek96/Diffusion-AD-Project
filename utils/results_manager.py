@@ -30,6 +30,7 @@ class ResultsManager:
     path: str
     is_loaded: bool
     columns: List[str]
+    results: DataFrame
 
     @property
     def results(self) -> DataFrame:
@@ -40,7 +41,7 @@ class ResultsManager:
     
     @results.setter
     def results(self, value: DataFrame):
-        self._results_df = value.copy(deep=True)  # TODO: maybe we don't need a deep copy or a copy at all
+        self._results_df = value.copy(deep=True)
         self._update_results_file(self._results_df)
 
     def __init__(self, results_path: str=DEFAULT_RESULTS_PATH, columns: List[str]=DEFAULT_COLUMNS):
@@ -78,6 +79,7 @@ class ResultsManager:
         -------
         None
         """
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         new_results.to_csv(self.path)
 
     def _get_categories_in_results_file(self) -> Set:

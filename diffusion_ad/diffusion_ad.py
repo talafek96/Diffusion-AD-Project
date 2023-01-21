@@ -7,7 +7,6 @@ from utils.noiser import Noiser
 from utils.denoiser import Denoiser
 from utils.error_map import ErrorMapGenerator
 from utils.anomaly_scorer import AnomalyScorer
-from utils.results_manager import ResultsManager
 from diffusion_ad.base_algo import BaseAlgo
 from config.configuration import DIFFUSION_AD_REQUIRED_HPARAMS, CATEGORY_TO_NOISE_TIMESTEPS
 
@@ -17,7 +16,6 @@ class DiffusionAD(BaseAlgo):
     denoiser: Denoiser
     anomaly_map_generator: ErrorMapGenerator
     anomaly_scorer: AnomalyScorer
-    results_manager: ResultsManager
 
     def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, results_manager, hparams):
         assert all(param in hparams for param in DIFFUSION_AD_REQUIRED_HPARAMS)
@@ -34,7 +32,6 @@ class DiffusionAD(BaseAlgo):
         self.denoiser = denoiser
         self.anomaly_map_generator = anomaly_map_generator
         self.anomaly_scorer = anomaly_scorer
-        self.results_manager = results_manager
 
     def get_reconstructed_batch(self,
                                 img: torch.TensorType,

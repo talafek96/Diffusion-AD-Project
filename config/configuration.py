@@ -34,6 +34,7 @@ DIFFUSION_AD_REQUIRED_HPARAMS = [
     'load_size',
     'input_size',
     'root_output_dir',
+    'results_csv_path',
     'save_anomaly_map'
 ]
 
@@ -50,6 +51,7 @@ DIFFUSION_AD_HPARAMS = Namespace(**{
     'input_size': 256,
     'root_output_dir': DEFAULT_ROOT_OUTPUT_DIR,
     'augment': DEFAULT_AUGMENT_NAME,
+    'results_csv_path': DEFAULT_RESULTS_PATH,
     'save_anomaly_map': True
 })
 

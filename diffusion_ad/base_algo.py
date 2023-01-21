@@ -10,6 +10,7 @@ from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
 import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
+from utils.results_manager import ResultsManager
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, UNLIMITED_MAX_TEST_IMAGES
 
@@ -104,6 +105,8 @@ class BaseAlgo(pl.LightningModule):
             self.args.test_on_train_data = False
         if 'max_test_imgs' not in self.args:
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
+        
+        self.results_manager = ResultsManager(self.args.results_csv_path)
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -316,11 +319,9 @@ class BaseAlgo(pl.LightningModule):
             self.save_anomaly_map(
                 anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
 
-    # TODO: implement
     def test_epoch_end(self, outputs):
         """
-        TODO: Document
-        called after 1 epoch (which contains many steps).
+        Callback to be called at the end of a test epoch (there should only be one epoch)
         """
         pixel_auc = -1
         # if not self.args.no_pix_level_auc_roc and  any(self.gt_list_px_lvl):
@@ -342,6 +343,13 @@ class BaseAlgo(pl.LightningModule):
         print('test_epoch_end')
         self.values = {'pixel_auc': float(pixel_auc), 'img_auc': float(img_auc)}
         self.log_dict(self.values)
+
+        self._update_csv(self.values)
         
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
+    
+    def _update_csv(self, values_dict) -> None:
+        new_dict = values_dict.copy()
+        new_dict['category'] = self.args.category
+        self.results_manager.results = self.results_manager.results.append(new_dict)
