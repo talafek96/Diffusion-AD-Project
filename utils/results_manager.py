@@ -12,6 +12,7 @@ class ResultsManager:
     A logging class managing loading, updating and storing the experiments results.
 
     Usage:
+    ------
 
     Init:
     >>> results_manager = ResultsManager(csv_path)
