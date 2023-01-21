@@ -2,17 +2,22 @@ import os
 import numpy as np
 from argparse import Namespace
 
+# Hidden default constants
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.1)
 _DEFAULT_RECON_BATCH_SIZE = 16
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 
+# Magic constants
 MAGIC_NORMALIZE_MEAN = np.array((0.5, 0.5, 0.5))  # np.array([0.485, 0.456, 0.406])
 MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255])
+
+# Public default constants
 UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
 DEFAULT_AUGMENT_NAME = ['basic']
-
 DEFAULT_RESULTS_PATH = '$PATH/results.csv'  # TODO: update to the desired path, obviously.
+
+# Public datastructures
 
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
