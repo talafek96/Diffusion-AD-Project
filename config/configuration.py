@@ -20,7 +20,7 @@ UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
 DEFAULT_AUGMENT_NAME = ['basic']
 DEFAULT_DATASET_PATH = os.path.abspath(os.path.join(__file__, '..', '..', 'extern', 'mvtec'))
 DEFAULT_ROOT_OUTPUT_DIR = os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME))
-DEFAULT_RESULTS_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
+DEFAULT_CSV_DATA_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
 
 # Public datastructures
 
@@ -53,7 +53,7 @@ DIFFUSION_AD_HPARAMS = Namespace(**{
     'input_size': 256,
     'root_output_dir': DEFAULT_ROOT_OUTPUT_DIR,
     'augment': DEFAULT_AUGMENT_NAME,
-    'results_csv_path': DEFAULT_RESULTS_PATH,
+    'results_csv_path': DEFAULT_CSV_DATA_PATH,
     'save_anomaly_map': True
 })
 

@@ -1,19 +1,23 @@
-from abc import ABC, abstractmethod
 import os
 import shutil
 import torch
+import cv2
+import numpy as np
+import pytorch_lightning as pl
+from abc import ABC, abstractmethod
+from typing import Set
 from torchvision import transforms
 from torch.utils.data import DataLoader
-import pytorch_lightning as pl
-import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
-import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
-from utils.results_manager import ResultsManager
+from utils.data_frame_manager import DataFrameManager
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
     UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE
+
+
+ALL_CATEGORIES = set(CATEGORY_TO_TYPE.keys())  # since keys() returns a view and not a set
 
 
 def copy_files(src, dst, ignores=[]):
@@ -107,7 +111,7 @@ class BaseAlgo(pl.LightningModule):
         if 'max_test_imgs' not in self.args:
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
         
-        self.results_manager = ResultsManager(self.args.results_csv_path)
+        self.experiment_data_manager = DataFrameManager(self.args.results_csv_path)
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -354,4 +358,29 @@ class BaseAlgo(pl.LightningModule):
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        self.results_manager.results = self.results_manager.results.append(new_dict, ignore_index=True)
+        self.experiment_data_manager.data = self.experiment_data_manager.data.append(new_dict, ignore_index=True)
+
+    def _get_categories_in_data_file(self) -> Set:
+        """
+        Getting a list of the categories from experiment_data_manager.
+        
+        Return: Set[str]
+        -------
+        A set of strings denoting the categories stored in the data file.
+        """
+        categories = set(self.experiment_data_manager.data["category"])
+        
+        return categories
+
+    def get_remaining_categories(self) -> Set:
+        """
+        Getting a set of the remaining categories that do not yet exist 
+        in the experiment data file.
+
+        Return:
+        -------
+        A set of strings denoting the categories who don't exist in the file
+        """
+        categories_in_file = self._get_categories_in_data_file()
+
+        return ALL_CATEGORIES - categories_in_file
