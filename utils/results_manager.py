@@ -80,7 +80,7 @@ class ResultsManager:
         None
         """
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        new_results.to_csv(self.path)
+        new_results.to_csv(self.path, index=False)
 
     def _get_categories_in_results_file(self) -> Set:
         """
