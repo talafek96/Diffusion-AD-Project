@@ -4,7 +4,7 @@ from pandas import DataFrame, read_csv
 from config.configuration import DEFAULT_CSV_DATA_PATH
 
 
-DEFAULT_COLUMNS = ["category", "category_type", "img_auc", "pixel_auc"]
+DEFAULT_COLUMNS = ["category", "category_type", "noise_timesteps", "vmin", "vmax", "img_auc", "pixel_auc"]
 
 
 class DataFrameManager:
