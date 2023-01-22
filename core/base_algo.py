@@ -354,6 +354,7 @@ class BaseAlgo(pl.LightningModule):
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
     
+    # TODO: add support for columns: noise_timesteps, vmin, max
     def _update_csv(self, values_dict) -> None:
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
