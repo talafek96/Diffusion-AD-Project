@@ -1,8 +1,10 @@
 import os
 import shutil
+from typing import Tuple
 import torch
 import cv2
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 from abc import ABC, abstractmethod
 from typing import Set
@@ -14,7 +16,7 @@ from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderData
 from utils.data_frame_manager import DataFrameManager
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
-    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE
+    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS, DEFAULT_AMAP_VALUES_COLUMNS
 
 
 ALL_CATEGORIES = set(CATEGORY_TO_TYPE.keys())  # since keys() returns a view and not a set
@@ -111,7 +113,9 @@ class BaseAlgo(pl.LightningModule):
         if 'max_test_imgs' not in self.args:
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
         
-        self.experiment_data_manager = DataFrameManager(self.args.results_csv_path)
+        self.experiment_results_manager = DataFrameManager(self.args.results_csv_path, columns=DEFAULT_RESULTS_COLUMNS)
+        self.anomaly_map_values_manager = DataFrameManager(self.args.amap_values_csv_path, columns=DEFAULT_AMAP_VALUES_COLUMNS)
+        # TODO: Maybe remove this and everything related to it if we don't use it in the end.
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -318,8 +322,7 @@ class BaseAlgo(pl.LightningModule):
         self.img_path_list.extend(file_name)
         # save images
         x = self.inv_normalize(x)
-        input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[
-                               0]*255, cv2.COLOR_BGR2RGB)
+        input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
         if self.args.save_anomaly_map:
             self.save_anomaly_map(
                 anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
@@ -349,29 +352,10 @@ class BaseAlgo(pl.LightningModule):
         self.values = {'pixel_auc': float(pixel_auc), 'img_auc': float(img_auc)}
         self.log_dict(self.values)
 
-        self._update_csv(self.values)
+        self._update_results_csv(self.values)
         
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
-    
-    # TODO: add support for columns: noise_timesteps, vmin, max
-    def _update_csv(self, values_dict) -> None:
-        new_dict = values_dict.copy()
-        new_dict['category'] = self.args.category
-        new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        self.experiment_data_manager.data = self.experiment_data_manager.data.append(new_dict, ignore_index=True)
-
-    def _get_categories_in_data_file(self) -> Set:
-        """
-        Getting a list of the categories from experiment_data_manager.
-        
-        Return: Set[str]
-        -------
-        A set of strings denoting the categories stored in the data file.
-        """
-        categories = set(self.experiment_data_manager.data["category"])
-        
-        return categories
 
     def get_remaining_categories(self) -> Set:
         """
@@ -385,3 +369,28 @@ class BaseAlgo(pl.LightningModule):
         categories_in_file = self._get_categories_in_data_file()
 
         return ALL_CATEGORIES - categories_in_file
+
+    def _update_results_csv(self, values_dict) -> None:
+        if self.args.category in set(self.experiment_results_manager.data.category):
+            mask = (self.experiment_results_manager.data.category != self.args.category)
+            self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
+        
+        new_dict = values_dict.copy()
+        new_dict['category'] = self.args.category
+        new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
+        self.experiment_results_manager.data = \
+            pd.concat(
+                [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
+            ).reset_index().sort_values(['category_type', 'category'])
+
+    def _get_categories_in_data_file(self) -> Set:
+        """
+        Getting a list of the categories from experiment_results_manager.
+        
+        Return: Set[str]
+        -------
+        A set of strings denoting the categories stored in the data file.
+        """
+        categories = set(self.experiment_results_manager.data["category"])
+        
+        return categories

@@ -22,8 +22,11 @@ DEFAULT_DATASET_PATH = os.path.abspath(os.path.join(__file__, '..', '..', 'exter
 DEFAULT_ROOT_OUTPUT_DIR = os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME))
 DEFAULT_CSV_DATA_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
 
-# Public datastructures
+# CSV Columns
+DEFAULT_RESULTS_COLUMNS = ["category", "category_type", "img_auc", "pixel_auc"]
+DEFAULT_AMAP_VALUES_COLUMNS = ["category", "noise_timesteps", "vmin", "vmax"]
 
+# Public datastructures
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
     'anomaly_map_generator_kwargs', 

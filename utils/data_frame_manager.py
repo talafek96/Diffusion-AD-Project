@@ -1,10 +1,7 @@
 import os
 from typing import List
 from pandas import DataFrame, read_csv
-from config.configuration import DEFAULT_CSV_DATA_PATH
-
-
-DEFAULT_COLUMNS = ["category", "category_type", "noise_timesteps", "vmin", "vmax", "img_auc", "pixel_auc"]
+from config.configuration import DEFAULT_CSV_DATA_PATH, DEFAULT_RESULTS_COLUMNS
 
 
 class DataFrameManager:
@@ -43,7 +40,10 @@ class DataFrameManager:
         self._data_df = value.copy(deep=True)
         self._update_data_file(self._data_df)
 
-    def __init__(self, data_path: str=DEFAULT_CSV_DATA_PATH, columns: List[str]=DEFAULT_COLUMNS):
+    def __init__(self, data_path: str=DEFAULT_CSV_DATA_PATH, columns: List[str]=None):
+        if not columns:
+            columns = DEFAULT_RESULTS_COLUMNS
+
         self.path = data_path
         self.is_loaded = False
         self.columns = columns
