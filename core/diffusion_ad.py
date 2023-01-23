@@ -150,7 +150,8 @@ class DiffusionAD(BaseAlgo):
         num_timesteps = CATEGORY_TO_NOISE_TIMESTEPS[self.args.category]
         img = self.data_transforms(img.squeeze(0).squeeze(0))
 
-        print("img min:", img.min(), "img max:", img.max())
+        if self.args.verbosity >= 1:
+            print("predict_scores(): img min:", img.min(), "img max:", img.max())
 
         if self.args.verbosity >= 2:
             # Show the transformed input image

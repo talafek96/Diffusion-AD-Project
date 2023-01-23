@@ -16,7 +16,7 @@ from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderData
 from utils.data_frame_manager import DataFrameManager
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
-    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS, DEFAULT_AMAP_VALUES_COLUMNS
+    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS
 
 
 ALL_CATEGORIES = set(CATEGORY_TO_TYPE.keys())  # since keys() returns a view and not a set
@@ -114,8 +114,6 @@ class BaseAlgo(pl.LightningModule):
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
         
         self.experiment_results_manager = DataFrameManager(self.args.results_csv_path, columns=DEFAULT_RESULTS_COLUMNS)
-        self.anomaly_map_values_manager = DataFrameManager(self.args.amap_values_csv_path, columns=DEFAULT_AMAP_VALUES_COLUMNS)
-        # TODO: Maybe remove this and everything related to it if we don't use it in the end.
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -291,7 +289,9 @@ class BaseAlgo(pl.LightningModule):
         x, gt, label, file_name, x_type, img_path = batch
         anomaly_map, score = self.predict_scores(x)
         score = score[0]  # assuming test_batch_size==1
-        print(f'Anomaly Map values:\nvmin={anomaly_map.min()}, vmax={anomaly_map.max()}')
+
+        if self.args.verbosity >= 1:
+            print(f'Anomaly Map values:\nvmin={anomaly_map.min()}, vmax={anomaly_map.max()}')
 
         if len(gt.shape) == 4:
             gt_np = (gt.cpu().numpy()[0, 0] > 0).astype(int)
@@ -303,17 +303,17 @@ class BaseAlgo(pl.LightningModule):
             else:
                 self.gt_list_px_lvl.extend(gt_np.ravel())
 
-        # Normalize anomaly map
-        vmin, vmax = CATEGORY_TO_V_MIN_MAX[self.args.category]
-        anomaly_map = (anomaly_map - vmin) / (vmax - vmin)
-        anomaly_map = anomaly_map.clip(0, 1)
-
         # Resize and blur for noise reduction
         anomaly_map_resized = cv2.resize(
             anomaly_map, (self.args.input_size, self.args.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
         anomaly_map_resized_blur = anomaly_map_resized  # TODO: Check if blurring the anomaly map works better or worse
+
+        # Normalize anomaly map
+        vmin, vmax = CATEGORY_TO_V_MIN_MAX[self.args.category]
+        anomaly_map = (anomaly_map - vmin) / (vmax - vmin)
+        anomaly_map = anomaly_map.clip(0, 1)
 
         self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
 
@@ -325,7 +325,7 @@ class BaseAlgo(pl.LightningModule):
         input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
         if self.args.save_anomaly_map:
             self.save_anomaly_map(
-                anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
+                anomaly_map, input_x, gt_np*255, file_name[0], x_type[0], score)
 
     def test_epoch_end(self, outputs):
         """
@@ -371,17 +371,20 @@ class BaseAlgo(pl.LightningModule):
         return ALL_CATEGORIES - categories_in_file
 
     def _update_results_csv(self, values_dict) -> None:
+        print('Entered update results csv')  # TODO: Remove this
         if self.args.category in set(self.experiment_results_manager.data.category):
+            print('Entered category in results data')  # TODO: Remove this
             mask = (self.experiment_results_manager.data.category != self.args.category)
             self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
         
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
+        print(f'new_dict is: {new_dict}')  # TODO: Remove this
         self.experiment_results_manager.data = \
             pd.concat(
                 [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
-            ).reset_index().sort_values(['category_type', 'category'])
+            ).reset_index(drop=True).sort_values(['category_type', 'category'])
 
     def _get_categories_in_data_file(self) -> Set:
         """
