@@ -3,10 +3,8 @@ import numpy as np
 from argparse import Namespace
 
 # Hidden default constants
-_CATEGORY_TYPE_OBJECT = 'object'
-_CATEGORY_TYPE_TEXTURE = 'texture'
 _DEFAULT_TIMESTEPS = 250
-_DEFAULT_V_MIN_MAX = (0.01, 1)
+_DEFAULT_V_MIN_MAX = (0.01, 0.4)
 _DEFAULT_RECON_BATCH_SIZE = 3
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 _DEFAULT_RESULTS_CSV = 'results.csv'
@@ -17,13 +15,17 @@ MAGIC_NORMALIZE_STD = np.array((0.5, 0.5, 0.5))  # np.array([0.229, 0.224, 0.255
 
 # Public default constants
 UNLIMITED_MAX_TEST_IMAGES = 0  # 0 is unlimited
+CATEGORY_TYPE_OBJECT = 'object'
+CATEGORY_TYPE_TEXTURE = 'texture'
 DEFAULT_AUGMENT_NAME = ['basic']
 DEFAULT_DATASET_PATH = os.path.abspath(os.path.join(__file__, '..', '..', 'extern', 'mvtec'))
 DEFAULT_ROOT_OUTPUT_DIR = os.path.abspath(os.path.join(__file__, '..', '..', _DEFAULT_OUTPUT_DIR_NAME))
-DEFAULT_RESULTS_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
+DEFAULT_CSV_DATA_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
+
+# CSV Columns
+DEFAULT_RESULTS_COLUMNS = ["category", "category_type", "img_auc", "pixel_auc"]
 
 # Public datastructures
-
 DIFFUSION_AD_REQUIRED_HPARAMS = [
     'reconstruction_batch_size', 
     'anomaly_map_generator_kwargs', 
@@ -53,17 +55,17 @@ DIFFUSION_AD_HPARAMS = Namespace(**{
     'input_size': 256,
     'root_output_dir': DEFAULT_ROOT_OUTPUT_DIR,
     'augment': DEFAULT_AUGMENT_NAME,
-    'results_csv_path': DEFAULT_RESULTS_PATH,
+    'results_csv_path': DEFAULT_CSV_DATA_PATH,
     'save_anomaly_map': True
 })
 
 CATEGORY_TO_NOISE_TIMESTEPS = {
     'bottle': _DEFAULT_TIMESTEPS,
     'cable': _DEFAULT_TIMESTEPS,
-    'capsule': 350,
+    'capsule': _DEFAULT_TIMESTEPS,  # Manually checked yielded 350 is good
     'carpet': _DEFAULT_TIMESTEPS,
-    'grid': 300,
-    'hazelnut': 250,
+    'grid': _DEFAULT_TIMESTEPS,  # Manually checked yielded 300 is good
+    'hazelnut': _DEFAULT_TIMESTEPS,  # Manually checked yielded 250 is good
     'leather': _DEFAULT_TIMESTEPS,
     'metal_nut': _DEFAULT_TIMESTEPS,
     'pill': _DEFAULT_TIMESTEPS,
@@ -78,9 +80,9 @@ CATEGORY_TO_NOISE_TIMESTEPS = {
 CATEGORY_TO_V_MIN_MAX = {
     'bottle': _DEFAULT_V_MIN_MAX,
     'cable': _DEFAULT_V_MIN_MAX,
-    'capsule': (0.04, 0.08),
+    'capsule': _DEFAULT_V_MIN_MAX,
     'carpet': _DEFAULT_V_MIN_MAX,
-    'grid': (0.025, 0.09),
+    'grid': _DEFAULT_V_MIN_MAX,
     'hazelnut': (0.02, 0.27),
     'leather': _DEFAULT_V_MIN_MAX,
     'metal_nut': _DEFAULT_V_MIN_MAX,
@@ -94,19 +96,19 @@ CATEGORY_TO_V_MIN_MAX = {
 }
 
 CATEGORY_TO_TYPE = {
-    'bottle': _CATEGORY_TYPE_OBJECT,
-    'cable': _CATEGORY_TYPE_OBJECT,
-    'capsule': _CATEGORY_TYPE_OBJECT,
-    'carpet': _CATEGORY_TYPE_TEXTURE,
-    'grid': _CATEGORY_TYPE_TEXTURE,
-    'hazelnut': _CATEGORY_TYPE_OBJECT,
-    'leather': _CATEGORY_TYPE_TEXTURE,
-    'metal_nut': _CATEGORY_TYPE_OBJECT,
-    'pill': _CATEGORY_TYPE_OBJECT,
-    'screw': _CATEGORY_TYPE_OBJECT,
-    'tile': _CATEGORY_TYPE_TEXTURE,
-    'toothbrush': _CATEGORY_TYPE_OBJECT,
-    'transistor': _CATEGORY_TYPE_OBJECT,
-    'wood': _CATEGORY_TYPE_TEXTURE,
-    'zipper': _CATEGORY_TYPE_TEXTURE
+    'bottle': CATEGORY_TYPE_OBJECT,
+    'cable': CATEGORY_TYPE_OBJECT,
+    'capsule': CATEGORY_TYPE_OBJECT,
+    'carpet': CATEGORY_TYPE_TEXTURE,
+    'grid': CATEGORY_TYPE_TEXTURE,
+    'hazelnut': CATEGORY_TYPE_OBJECT,
+    'leather': CATEGORY_TYPE_TEXTURE,
+    'metal_nut': CATEGORY_TYPE_OBJECT,
+    'pill': CATEGORY_TYPE_OBJECT,
+    'screw': CATEGORY_TYPE_OBJECT,
+    'tile': CATEGORY_TYPE_TEXTURE,
+    'toothbrush': CATEGORY_TYPE_OBJECT,
+    'transistor': CATEGORY_TYPE_OBJECT,
+    'wood': CATEGORY_TYPE_TEXTURE,
+    'zipper': CATEGORY_TYPE_TEXTURE
 }

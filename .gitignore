@@ -131,10 +131,7 @@ dmypy.json
 # Binaries
 bin/
 models/
-extern/mvtec/
-
-# Datasets
-extern/
+extern/mvtec_backup/
 
 # Other trash
 desktop.ini

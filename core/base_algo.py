@@ -1,19 +1,25 @@
-from abc import ABC, abstractmethod
 import os
 import shutil
+from typing import Tuple
 import torch
+import cv2
+import numpy as np
+import pandas as pd
+import pytorch_lightning as pl
+from abc import ABC, abstractmethod
+from typing import Set
 from torchvision import transforms
 from torch.utils.data import DataLoader
-import pytorch_lightning as pl
-import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
-import cv2
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
-from utils.results_manager import ResultsManager
+from utils.data_frame_manager import DataFrameManager
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
-    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE
+    UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS
+
+
+ALL_CATEGORIES = set(CATEGORY_TO_TYPE.keys())  # since keys() returns a view and not a set
 
 
 def copy_files(src, dst, ignores=[]):
@@ -107,7 +113,7 @@ class BaseAlgo(pl.LightningModule):
         if 'max_test_imgs' not in self.args:
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
         
-        self.results_manager = ResultsManager(self.args.results_csv_path)
+        self.experiment_results_manager = DataFrameManager(self.args.results_csv_path, columns=DEFAULT_RESULTS_COLUMNS)
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -283,7 +289,9 @@ class BaseAlgo(pl.LightningModule):
         x, gt, label, file_name, x_type, img_path = batch
         anomaly_map, score = self.predict_scores(x)
         score = score[0]  # assuming test_batch_size==1
-        print(f'Anomaly Map values:\nvmin={anomaly_map.min()}, vmax={anomaly_map.max()}')
+
+        if self.args.verbosity >= 1:
+            print(f'Anomaly Map values:\nvmin={anomaly_map.min()}, vmax={anomaly_map.max()}')
 
         if len(gt.shape) == 4:
             gt_np = (gt.cpu().numpy()[0, 0] > 0).astype(int)
@@ -295,17 +303,17 @@ class BaseAlgo(pl.LightningModule):
             else:
                 self.gt_list_px_lvl.extend(gt_np.ravel())
 
-        # Normalize anomaly map
-        vmin, vmax = CATEGORY_TO_V_MIN_MAX[self.args.category]
-        anomaly_map = (anomaly_map - vmin) / (vmax - vmin)
-        anomaly_map = anomaly_map.clip(0, 1)
-
         # Resize and blur for noise reduction
         anomaly_map_resized = cv2.resize(
             anomaly_map, (self.args.input_size, self.args.input_size))
         anomaly_map_resized_blur = gaussian_filter(
             anomaly_map_resized, sigma=4)
         anomaly_map_resized_blur = anomaly_map_resized  # TODO: Check if blurring the anomaly map works better or worse
+
+        # Normalize anomaly map
+        vmin, vmax = CATEGORY_TO_V_MIN_MAX[self.args.category]
+        anomaly_map = (anomaly_map - vmin) / (vmax - vmin)
+        anomaly_map = anomaly_map.clip(0, 1)
 
         self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
 
@@ -314,11 +322,10 @@ class BaseAlgo(pl.LightningModule):
         self.img_path_list.extend(file_name)
         # save images
         x = self.inv_normalize(x)
-        input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[
-                               0]*255, cv2.COLOR_BGR2RGB)
+        input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
         if self.args.save_anomaly_map:
             self.save_anomaly_map(
-                anomaly_map_resized_blur, input_x, gt_np*255, file_name[0], x_type[0], score)
+                anomaly_map, input_x, gt_np*255, file_name[0], x_type[0], score)
 
     def test_epoch_end(self, outputs):
         """
@@ -345,13 +352,48 @@ class BaseAlgo(pl.LightningModule):
         self.values = {'pixel_auc': float(pixel_auc), 'img_auc': float(img_auc)}
         self.log_dict(self.values)
 
-        self._update_csv(self.values)
+        self._update_results_csv(self.values)
         
         with open(os.path.join(self.logger.log_dir, 'run.txt'), 'a') as f:
             f.write(str(self.values))
-    
-    def _update_csv(self, values_dict) -> None:
+
+    def get_remaining_categories(self) -> Set:
+        """
+        Getting a set of the remaining categories that do not yet exist 
+        in the experiment data file.
+
+        Return:
+        -------
+        A set of strings denoting the categories who don't exist in the file
+        """
+        categories_in_file = self._get_categories_in_data_file()
+
+        return ALL_CATEGORIES - categories_in_file
+
+    def _update_results_csv(self, values_dict) -> None:
+        print('Entered update results csv')  # TODO: Remove this
+        if self.args.category in set(self.experiment_results_manager.data.category):
+            print('Entered category in results data')  # TODO: Remove this
+            mask = (self.experiment_results_manager.data.category != self.args.category)
+            self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
+        
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        self.results_manager.results = self.results_manager.results.append(new_dict, ignore_index=True)
+        print(f'new_dict is: {new_dict}')  # TODO: Remove this
+        self.experiment_results_manager.data = \
+            pd.concat(
+                [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
+            ).reset_index(drop=True).sort_values(['category_type', 'category'])
+
+    def _get_categories_in_data_file(self) -> Set:
+        """
+        Getting a list of the categories from experiment_results_manager.
+        
+        Return: Set[str]
+        -------
+        A set of strings denoting the categories stored in the data file.
+        """
+        categories = set(self.experiment_results_manager.data["category"])
+        
+        return categories
