@@ -133,9 +133,6 @@ bin/
 models/
 extern/mvtec/
 
-# Datasets
-extern/
-
 # Other trash
 desktop.ini
 output/
