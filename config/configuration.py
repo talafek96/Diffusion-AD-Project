@@ -110,5 +110,5 @@ CATEGORY_TO_TYPE = {
     'toothbrush': CATEGORY_TYPE_OBJECT,
     'transistor': CATEGORY_TYPE_OBJECT,
     'wood': CATEGORY_TYPE_TEXTURE,
-    'zipper': CATEGORY_TYPE_TEXTURE
+    'zipper': CATEGORY_TYPE_OBJECT
 }
