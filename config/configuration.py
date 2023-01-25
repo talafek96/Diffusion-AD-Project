@@ -5,7 +5,7 @@ from argparse import Namespace
 # Hidden default constants
 _DEFAULT_TIMESTEPS = 250
 _DEFAULT_V_MIN_MAX = (0.01, 0.4)
-_DEFAULT_RECON_BATCH_SIZE = 3
+_DEFAULT_RECON_BATCH_SIZE = 16
 _DEFAULT_OUTPUT_DIR_NAME = 'output'
 _DEFAULT_RESULTS_CSV = 'results.csv'
 
