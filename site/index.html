@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
   <meta name="description" content="" />
   <meta name="author" content="" />
-  <title>Mini-website for Industrial project</title>
+  <title>Mini-website for Industrial project about using Denoising Diffusion Models for Anomaly Detection</title>
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
   <!-- Core theme CSS (includes Bootstrap)-->
   <link href="css/styles.css" rel="stylesheet" />
@@ -52,7 +52,6 @@
             background-attachment: center;
             background-size: 100% 100%;
           ">
-    <!-- TODO: here is the black title. just using F12 to find these things is enough. -->
     <header class="bg-gradient text-white">
       <div>
         <div class="container px-4 text-white" style="background: rgba(61, 57, 57, 0.5);">
@@ -78,13 +77,12 @@
           <br />
           <ul>
             <li>
-              To create a synthetic documents generator which will be used for
-              extracting dataset for training deep learning model under the
-              domain of documents understanding.
+              In this project we will attempt to develop a POC for detecting anomalies in
+              images based on the ability or inability of a DDM (Denoising Diffusion Model) to reconstruct them.
             </li>
             <li>
-              For each label we have in the original document we want to
-              recognize its location in the synthesized image.
+              The results of the POC will then determine whether there is grounds for further research for using
+              Denoising Diffusion Models for Anomaly Detection problems.
             </li>
           </ul>
         </div>
@@ -99,147 +97,17 @@
           <h2>Methodology</h2>
           <br />
           <div>
-            <p class="lead">Blender Scene Setup</p>
+            <p class="lead">Anomaly Detection Pipeline</p>
             <ul>
               <li>
-                Adding the meshes to the scene, two plane meshes one is the
-                document and the other is the floor
+                Add random gaussian noise to an image.
               </li>
               <li>
-                Scene definition: in order to make the scene look realistic we
-                define the materials of the objects, the lightning and the
-                camera.
+                Denoise the noised image using a DDM and reconstruct the image.
               </li>
               <li>
-                This part allows us to control the objects, lights and camera
-                in the coding part and randomize their location and the
-                intensity of the light.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p class="lead">The Paper Shape</p>
-            <ul>
-              <li>Applying the document image as a texture to the object</li>
-              <li>
-                Changing the shape of the paper, we support multiple options
-                for the shape:
-              </li>
-              <dd>- Flat paper</dd>
-              <dd>- Folded paper</dd>
-              <dd>- Wrinkled paper</dd>
-              <dd>- Bended paper</dd>
-            </ul>
-          </div>
-          <div>
-            <p class="lead">Extracting the labels algorithm</p>
-            <ul>
-              <div>
-                <li>Divide the mesh faces to triangles (tessellation)</li>
-                <br />
-                <div class="row">
-                  <div class="card" style="width: 25rem">
-                    <img src="images/before.png" class="card-img-top" alt="before" />
-                    <div class="card-body">
-                      <p class="card-text">The mesh geometry before</p>
-                    </div>
-                  </div>
-                  <div class="card" style="width: 25rem">
-                    <img src="images/after.png" class="card-img-top" alt="after" />
-                    <div class="card-body">
-                      <p class="card-text">The mesh geometry after</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <br />
-              <div>
-                <li>Store the UV coordinates for each corner of the triangle in a KDtree </li>
-                <br />
-                <div class="row">
-                  <div class="card" style="width: 15rem">
-                    <img src="images/triangle_corners.PNG" class="card-img-top" alt="triangle_corners" />
-                    <div class="card-body">
-                      <p class="card-text">The triangle corners </p>
-                    </div>
-                  </div>
-                  <div class="card" style="width: 15rem">
-                    <img src="images/uv_per_corner.PNG" class="card-img-top" alt="uv_per_corner" />
-                    <div class="card-body">
-                      <p class="card-text">The UV coordinates of the corners</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <li>
-                  Map the bounding box points of a label ( for each point ):
-                </li>
-                <dd>
-                  -- Using the KDtree find the uv coordinate of the triangle corner which is the closest to the point's
-                  uv coordinate
-                <dd>
-                  -- Find the triangle that contains the point.
-                </dd>
-                <dd>
-                  -- Find the point's barycentric coordinate relative to the traingle
-                </dd>
-                <dd>
-                  -- Find the local coordinate of the point using
-                  interpolation
-                </dd>
-                <dd>-- Find the world space coordinate of the point</dd>
-                <dd>-- Find the camedra space coordinate of the point</dd>
-              </div>
-              <div>
-                <li>
-                  Converting the bounding box points from camera space
-                  coordinates to the render space coordinates
-                </li>
-                <br />
-                <div class="row">
-                  <div class="card" style="width: 25rem">
-                    <img src="images/cameraspaceview.png" class="card-img-top" alt="cameraspaceview" />
-                    <div class="card-body">
-                      <p class="card-text">Camera Space View</p>
-                    </div>
-                  </div>
-                  <div class="card" style="width: 25rem">
-                    <img src="images/renderspace.png" class="card-img-top" alt="renderspace" />
-                    <div class="card-body">
-                      <p class="card-text">Render Space</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ul>
-          </div>
-          <br />
-          <div>
-            <p class="lead">Automation And Parameters Randomization</p>
-            <ul>
-              <li>Allows us to automate the render generation</li>
-              <li>
-                Taking pictures of our object from different angles by moving
-                the camera around the scene. There is three loops, each one of
-                them modifies the angles of the camera, the first is the
-                distance from the object, the second is the rotation along the
-                X axis and the last is rotation from 0 to 360 degrees around
-                the object.
-              </li>
-              <li>
-                We added a mode which supports moving the camera randomly
-              </li>
-              <li>Randomize a texture for the environment and the floor</li>
-              <li>
-                Randomization of the light intensity, color and location
-              </li>
-              <li>
-                The user can choose the shape of the paper and the intensity
-                level of the wrinkles/ bending angle/ folding angle or a mix.
-              </li>
-              <li>
-                We also support adding an object which creates shadow on the document paper
+                Calculate the “difference” between the original image and the 
+                reconstructed image and use the result to determine an anomality score.
               </li>
             </ul>
           </div>
@@ -277,13 +145,27 @@
           <br />
           <ul>
             <li>
-              We met our project's main goal, that we created a synthetic
-              documents generator
+              <b><u>Knowledge:</u></b>
+              <ul>
+                <li>Tal and especially Amit broadened their horizons in the field of Machine Learning, specifically in the fields of Denoising Diffusion Models and Anomaly Detection.</li>
+                <li>Amit also gained experience and practical knowledge in using ML and data-science specific libraries in Python.</li>
+              </ul>
             </li>
-            <br />
-            <li>The program creates labeled training data.</li>
-            <br />
-            <li>The results support that.</li>
+            <li>
+              <b><u>Code base for the POC:</u></b>
+              <ul>
+                <li>Tal and Amit developed a professional, extendable and modular interface for running experiments and saving the results persistently over runtime cutoffs.</li>
+                <li><a href="https://github.com/talafek96/Diffusion-AD-Project">Diffusion-AD-Project (github.com)</a></li>
+              </ul>
+            </li>
+            <li>
+              <b><u>Scheduling:</u></b>
+              <ul>
+                <li>Magically stuck to the schedule we initially planned in the Kickoff Presentation down to the week.</li>
+                <li>Used GitHub projects to manage a professional scrum board for weekly spirnts.</li>
+              </ul>
+            </li>
+            <li><b><u>Fun.</u></b></li>
           </ul>
         </div>
       </div>
@@ -353,24 +235,23 @@
           <ul>
             <li>Students:</li>
             <ul>
-              - Rahaf Abu Ahmad
+              - Tal Afek
               <dd>Computer Science Engineer</dd>
             </ul>
             <ul>
-              - Safi Azmi
+              - Amit Inbar
               <dd>Computer Science Engineer</dd>
             </ul>
-            <li> <a href="https://github.com/safiazmi92/Synthetic-images-generation-using-Blender">github link</a></li>
             <li>Academic Supervisor:</li>
             <ul>
-              Prof. Alex Bornstein
+              Mr. Lev Yohananov
             </ul>
             <li>IBM Supervisors:</li>
             <ul>
-              - Idan Friedman
+              - Mr. Eli Schwartz
             </ul>
             <ul>
-              - Udi Barzelay
+              - Mr. Assaf Arbelle
             </ul>
           </ul>
         </div>
