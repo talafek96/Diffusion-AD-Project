@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+  <title>Mini-website for Industrial project</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <!-- Core theme CSS (includes Bootstrap)-->
+  <link href="css/styles.css" rel="stylesheet" />
+</head>
+
+<body id="page-top">
+  <!-- Navigation-->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+    <div class="container px-4">
+      <a class="navbar-brand" href="#page-top">Menu</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+        aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#goals">Goals</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#methodology">Methodology</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#testing">Testing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#achievments">Achievments</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#examples">Exmaples</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about">About</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!-- Header-->
+  <div style="
+            background-image: url('images/background1.png');
+            background-repeat: no-repeat;
+            background-attachment: center;
+            background-size: 100% 100%;
+          ">
+    <!-- TODO: here is the black title. just using F12 to find these things is enough. -->
+    <header class="bg-gradient text-white">
+      <div>
+        <div class="container px-4 text-white" style="background: rgba(61, 57, 57, 0.5);">
+          <h1 class="fw-bolder">Industrial Project (234313)</h1>
+          <p class="lead">
+            <b>
+              Anomaly Detection using Denoising Diffusion Models.
+            </b>
+          </p>
+        </div>
+        <center>
+          <a class="btn btn-lg btn-dark" href="#goals">Start scrolling!</a>
+        </center>
+      </div>
+    </header>
+  </div>
+  <!-- Goals section-->
+  <section id="goals" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Goals</h2>
+          <br />
+          <ul>
+            <li>
+              To create a synthetic documents generator which will be used for
+              extracting dataset for training deep learning model under the
+              domain of documents understanding.
+            </li>
+            <li>
+              For each label we have in the original document we want to
+              recognize its location in the synthesized image.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Methodology section-->
+  <section class="bg-light" id="methodology" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Methodology</h2>
+          <br />
+          <div>
+            <p class="lead">Blender Scene Setup</p>
+            <ul>
+              <li>
+                Adding the meshes to the scene, two plane meshes one is the
+                document and the other is the floor
+              </li>
+              <li>
+                Scene definition: in order to make the scene look realistic we
+                define the materials of the objects, the lightning and the
+                camera.
+              </li>
+              <li>
+                This part allows us to control the objects, lights and camera
+                in the coding part and randomize their location and the
+                intensity of the light.
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p class="lead">The Paper Shape</p>
+            <ul>
+              <li>Applying the document image as a texture to the object</li>
+              <li>
+                Changing the shape of the paper, we support multiple options
+                for the shape:
+              </li>
+              <dd>- Flat paper</dd>
+              <dd>- Folded paper</dd>
+              <dd>- Wrinkled paper</dd>
+              <dd>- Bended paper</dd>
+            </ul>
+          </div>
+          <div>
+            <p class="lead">Extracting the labels algorithm</p>
+            <ul>
+              <div>
+                <li>Divide the mesh faces to triangles (tessellation)</li>
+                <br />
+                <div class="row">
+                  <div class="card" style="width: 25rem">
+                    <img src="images/before.png" class="card-img-top" alt="before" />
+                    <div class="card-body">
+                      <p class="card-text">The mesh geometry before</p>
+                    </div>
+                  </div>
+                  <div class="card" style="width: 25rem">
+                    <img src="images/after.png" class="card-img-top" alt="after" />
+                    <div class="card-body">
+                      <p class="card-text">The mesh geometry after</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <br />
+              <div>
+                <li>Store the UV coordinates for each corner of the triangle in a KDtree </li>
+                <br />
+                <div class="row">
+                  <div class="card" style="width: 15rem">
+                    <img src="images/triangle_corners.PNG" class="card-img-top" alt="triangle_corners" />
+                    <div class="card-body">
+                      <p class="card-text">The triangle corners </p>
+                    </div>
+                  </div>
+                  <div class="card" style="width: 15rem">
+                    <img src="images/uv_per_corner.PNG" class="card-img-top" alt="uv_per_corner" />
+                    <div class="card-body">
+                      <p class="card-text">The UV coordinates of the corners</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <li>
+                  Map the bounding box points of a label ( for each point ):
+                </li>
+                <dd>
+                  -- Using the KDtree find the uv coordinate of the triangle corner which is the closest to the point's
+                  uv coordinate
+                <dd>
+                  -- Find the triangle that contains the point.
+                </dd>
+                <dd>
+                  -- Find the point's barycentric coordinate relative to the traingle
+                </dd>
+                <dd>
+                  -- Find the local coordinate of the point using
+                  interpolation
+                </dd>
+                <dd>-- Find the world space coordinate of the point</dd>
+                <dd>-- Find the camedra space coordinate of the point</dd>
+              </div>
+              <div>
+                <li>
+                  Converting the bounding box points from camera space
+                  coordinates to the render space coordinates
+                </li>
+                <br />
+                <div class="row">
+                  <div class="card" style="width: 25rem">
+                    <img src="images/cameraspaceview.png" class="card-img-top" alt="cameraspaceview" />
+                    <div class="card-body">
+                      <p class="card-text">Camera Space View</p>
+                    </div>
+                  </div>
+                  <div class="card" style="width: 25rem">
+                    <img src="images/renderspace.png" class="card-img-top" alt="renderspace" />
+                    <div class="card-body">
+                      <p class="card-text">Render Space</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ul>
+          </div>
+          <br />
+          <div>
+            <p class="lead">Automation And Parameters Randomization</p>
+            <ul>
+              <li>Allows us to automate the render generation</li>
+              <li>
+                Taking pictures of our object from different angles by moving
+                the camera around the scene. There is three loops, each one of
+                them modifies the angles of the camera, the first is the
+                distance from the object, the second is the rotation along the
+                X axis and the last is rotation from 0 to 360 degrees around
+                the object.
+              </li>
+              <li>
+                We added a mode which supports moving the camera randomly
+              </li>
+              <li>Randomize a texture for the environment and the floor</li>
+              <li>
+                Randomization of the light intensity, color and location
+              </li>
+              <li>
+                The user can choose the shape of the paper and the intensity
+                level of the wrinkles/ bending angle/ folding angle or a mix.
+              </li>
+              <li>
+                We also support adding an object which creates shadow on the document paper
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Testing section-->
+  <section id="testing" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Testing</h2>
+          <br />
+          <ul>
+            <li>
+              We added a feature to draw the bounding box around each labeled
+              word to help us check the results.
+            </li>
+            <br />
+            <div class="card" style="width: 40rem">
+              <img src="images/testing.png" class="card-img-top" alt="testing" />
+            </div>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Achievments section-->
+  <section id="achievments" style="padding:70px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Achievments</h2>
+          <br />
+          <ul>
+            <li>
+              We met our project's main goal, that we created a synthetic
+              documents generator
+            </li>
+            <br />
+            <li>The program creates labeled training data.</li>
+            <br />
+            <li>The results support that.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Examples section-->
+  <section id="examples" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Examples</h2>
+          <br />
+          <div>
+            <div class="row">
+              <div class="card" style="width: 25rem">
+                <img src="images/example1.png" class="card-img-top" alt="example1" />
+              </div>
+              <div class="card" style="width: 25rem">
+                <img src="images/example1_bbs.png" class="card-img-top" alt="example1_bbs" />
+              </div>
+            </div>
+          </div>
+          <br />
+          <div>
+            <div class="row">
+              <div class="card" style="width: 25rem">
+                <img src="images/example2.png" class="card-img-top" alt="example2" />
+              </div>
+              <div class="card" style="width: 25rem">
+                <img src="images/example2_bbs.png" class="card-img-top" alt="example2_bbs" />
+              </div>
+            </div>
+          </div>
+          <br />
+          <div>
+            <div class="row">
+              <div class="card" style="width: 25rem">
+                <img src="images/example4.png" class="card-img-top" alt="example4" />
+              </div>
+              <div class="card" style="width: 25rem">
+                <img src="images/example5.png" class="card-img-top" alt="example5" />
+              </div>
+            </div>
+          </div>
+          <br />
+          <div>
+            <div class="row">
+              <div class="card" style="width: 25rem">
+                <img src="images/example6.png" class="card-img-top" alt="example6" />
+              </div>
+              <div class="card" style="width: 25rem">
+                <img src="images/example7.png" class="card-img-top" alt="example7" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Contact section-->
+  <section id="about" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>About us</h2>
+          <br />
+          <ul>
+            <li>Students:</li>
+            <ul>
+              - Rahaf Abu Ahmad
+              <dd>Computer Science Engineer</dd>
+            </ul>
+            <ul>
+              - Safi Azmi
+              <dd>Computer Science Engineer</dd>
+            </ul>
+            <li> <a href="https://github.com/safiazmi92/Synthetic-images-generation-using-Blender">github link</a></li>
+            <li>Academic Supervisor:</li>
+            <ul>
+              Prof. Alex Bornstein
+            </ul>
+            <li>IBM Supervisors:</li>
+            <ul>
+              - Idan Friedman
+            </ul>
+            <ul>
+              - Udi Barzelay
+            </ul>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Footer-->
+  <footer class="py-5 bg-dark">
+    <div class="container px-4">
+      <p class="m-0 text-center text-white">
+        Industrial Project mini website
+      </p>
+    </div>
+  </footer>
+  <!-- Bootstrap core JS-->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Core theme JS-->
+  <script src="js/scripts.js"></script>
+</body>
+
+</html>
