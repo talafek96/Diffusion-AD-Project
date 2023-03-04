@@ -16,7 +16,7 @@
   <!-- Navigation-->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
     <div class="container px-4">
-      <a class="navbar-brand" href="#page-top">Menu</a>
+      <a class="navbar-brand" href="#page-top">Top</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
         aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -122,22 +122,26 @@
         <div class="col-lg-8">
           <h2>Testing</h2>
           <br />
-          <ul>
-            <li>
-              We added a feature to draw the bounding box around each labeled
-              word to help us check the results.
-            </li>
-            <br />
-            <div class="card" style="width: 40rem">
-              <img src="images/testing.png" class="card-img-top" alt="testing" />
+          <p>
+            In order to verify and test our anomaly detection pipeline we have made a small experiment
+            that ran the full pipeline on a single chosen input image.
+            <br /><br />
+            Below we display the output results for an example input of a hazelnut featuring a cut anomaly
+            on it, 8 of the reconstructed images and finally a visualization for the anomaly
+            heatmap generated.
+            <div class="card" style="width: 60rem">
+              <img src="images/testing_hazelnut_cut.png" class="card-img-top" alt="testing" />
             </div>
-          </ul>
+            <br />
+            As we can see, there are very distinct marks on the heatmap where the anomaly had been
+            - along with some noise for non-anomalous regions.
+          </p>
         </div>
       </div>
     </div>
   </section>
   <!-- Achievements section-->
-  <section id="achievements" style="padding:70px;">
+  <section class="bg-light" id="achievements" style="padding:70px;">
     <div class="container px-4">
       <div class="row gx-4 justify-content-center">
         <div class="col-lg-8">
@@ -188,6 +192,16 @@
               </center>
             </div>
           </div>
+          <br />
+          <p>
+            Note that the results were consistently better with object type categories rather than with textures.
+            We anticipated this result, since the task of reconstructing images that feature items with an inherently
+            random structure is typically harder for a denoising diffusion model, as it cannot precisely
+            anticipate and reconstruct all of the random features that were degraded after the noise was added
+            to the original image and it ends up making up extra features on its own typically.
+            <br /><br />
+            We will meet this phenomenon again in the 'Findings' section.
+          </p>
         </div>
       </div>
     </div>
@@ -201,47 +215,42 @@
             Findings
           </h2>
           <br />
+          <h4>
+            Successful detections
+          </h4>
           <div>
-            <div class="row">
-              <div class="card" style="width: 25rem">
-                <img src="images/example1.png" class="card-img-top" alt="example1" />
-              </div>
-              <div class="card" style="width: 25rem">
-                <img src="images/example1_bbs.png" class="card-img-top" alt="example1_bbs" />
-              </div>
+            <div class="justify-content-center">
+              <center>
+                <div class="card" style="width: 50rem">
+                  <img src="images/success_1_2.jpg" class="card-img-top" alt="Objects results" />
+                </div>
+                <div class="card" style="width: 50rem">
+                  <img src="images/success_3_4.jpg" class="card-img-top" alt="Textures results" />
+                </div>
+              </center>
             </div>
           </div>
           <br />
+          <h4>
+            Failed detections
+          </h4>
           <div>
-            <div class="row">
-              <div class="card" style="width: 25rem">
-                <img src="images/example2.png" class="card-img-top" alt="example2" />
-              </div>
-              <div class="card" style="width: 25rem">
-                <img src="images/example2_bbs.png" class="card-img-top" alt="example2_bbs" />
-              </div>
-            </div>
-          </div>
-          <br />
-          <div>
-            <div class="row">
-              <div class="card" style="width: 25rem">
-                <img src="images/example4.png" class="card-img-top" alt="example4" />
-              </div>
-              <div class="card" style="width: 25rem">
-                <img src="images/example5.png" class="card-img-top" alt="example5" />
-              </div>
-            </div>
-          </div>
-          <br />
-          <div>
-            <div class="row">
-              <div class="card" style="width: 25rem">
-                <img src="images/example6.png" class="card-img-top" alt="example6" />
-              </div>
-              <div class="card" style="width: 25rem">
-                <img src="images/example7.png" class="card-img-top" alt="example7" />
-              </div>
+            <div class="justify-content-center">
+              <p>
+                In the following failed detection examples the model had failed detecting the anomalies and even
+                incorrectly detected non-anomalous regions as anomalies.
+                <br />
+                This is explained using the same reasoning given in the <a href="#achievements">achievements</a>
+                section.
+              </p>
+              <center>
+                <div class="card" style="width: 33rem">
+                  <img src="images/failed_1_2.jpg" class="card-img-top" alt="Objects results" />
+                </div>
+                <div class="card" style="width: 33rem">
+                  <img src="images/failed_3_4.jpg" class="card-img-top" alt="Textures results" />
+                </div>
+              </center>
             </div>
           </div>
         </div>
@@ -249,7 +258,7 @@
     </div>
   </section>
   <!-- Contact section-->
-  <section id="about" style="padding:50px;">
+  <section class="bg-light" id="about" style="padding:50px;">
     <div class="container px-4">
       <div class="row gx-4 justify-content-center">
         <div class="col-lg-8">
