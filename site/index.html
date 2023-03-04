@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+  <title>Anomaly Detection using Denoising Diffusion Models</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <!-- Core theme CSS (includes Bootstrap)-->
+  <link href="css/styles.css" rel="stylesheet" />
+</head>
+
+<body id="page-top">
+  <!-- Navigation-->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+    <div class="container px-4">
+      <a class="navbar-brand" href="#page-top">Top</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+        aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#goals">Goals</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#methodology">Methodology</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#testing">Testing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#achievements">Achievements</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#findings">Findings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about">About</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!-- Header-->
+  <div style="
+            background-image: url('images/background1.png');
+            background-repeat: no-repeat;
+            background-attachment: center;
+            background-size: 100% 100%;
+          ">
+    <header class="bg-gradient text-white">
+      <div>
+        <div class="container px-4 text-white" style="background: rgba(61, 57, 57, 0.5);">
+          <h1 class="fw-bolder">Industrial Project (234313)</h1>
+          <p class="lead">
+            <b>
+              Anomaly Detection using Denoising Diffusion Models.
+            </b>
+          </p>
+        </div>
+        <center>
+          <a class="btn btn-lg btn-dark" href="#goals">Start scrolling!</a>
+        </center>
+      </div>
+    </header>
+  </div>
+  <!-- Goals section-->
+  <section id="goals" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Goals</h2>
+          <br />
+          <ul>
+            <li>
+              In this project we will attempt to develop a POC for detecting anomalies in
+              images based on the ability or inability of a DDM (Denoising Diffusion Model) to reconstruct them.
+            </li>
+            <li>
+              The results of the POC will then determine whether there is grounds for further research for using
+              Denoising Diffusion Models for Anomaly Detection problems.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Methodology section-->
+  <section class="bg-light" id="methodology" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Methodology</h2>
+          <br />
+          <div>
+            <p class="lead">Anomaly Detection Pipeline</p>
+            <ul>
+              <li>
+                Add random gaussian noise to an image.
+              </li>
+              <li>
+                Denoise the noised image using a DDM and reconstruct the image.
+              </li>
+              <li>
+                Calculate the “difference” between the original image and the 
+                reconstructed image and use the result to determine an anomality score.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Testing section-->
+  <section id="testing" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Testing</h2>
+          <br />
+          <p>
+            In order to verify and test our anomaly detection pipeline we have made a small experiment
+            that ran the full pipeline on a single chosen input image.
+            <br /><br />
+            Below we display the output results for an example input of a hazelnut featuring a cut anomaly
+            on it, 8 of the reconstructed images and finally a visualization for the anomaly
+            heatmap generated.
+            <div class="card" style="width: 60rem">
+              <img src="images/testing_hazelnut_cut.png" class="card-img-top" alt="testing" />
+            </div>
+            <br />
+            As we can see, there are very distinct marks on the heatmap where the anomaly had been
+            - along with some noise for non-anomalous regions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Achievements section-->
+  <section class="bg-light" id="achievements" style="padding:70px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>Achievements</h2>
+          <br />
+          <ul>
+            <li>
+              <b><u>Knowledge:</u></b>
+              <ul>
+                <li>Tal and especially Amit broadened their horizons in the field of Machine Learning, specifically in the fields of Denoising Diffusion Models and Anomaly Detection.</li>
+                <li>Amit also gained experience and practical knowledge in using ML and data-science specific libraries in Python.</li>
+              </ul>
+            </li>
+            <li>
+              <b><u>Code base for the POC:</u></b>
+              <ul>
+                <li>Tal and Amit developed a professional, extendable and modular interface for running experiments and saving the results persistently over runtime cutoffs.</li>
+                <li><a href="https://github.com/talafek96/Diffusion-AD-Project">Diffusion-AD-Project (github.com)</a></li>
+              </ul>
+            </li>
+            <li>
+              <b><u>Scheduling:</u></b>
+              <ul>
+                <li>Magically stuck to the schedule we initially planned in the Kickoff Presentation down to the week.</li>
+                <li>Used GitHub projects to manage a professional scrum board for weekly spirnts.</li>
+              </ul>
+            </li>
+            <li><b><u>Fun.</u></b></li>
+          </ul>
+          <p>
+            <b>
+              We have also achieved impressive results in comparison to our supervisors' recently published anomaly detection model, "MAEDAY",
+              as shown in the tables below:
+            </b>
+          </p>
+          <div>
+            <div class="justify-content-center">
+              <center>
+                <div class="card" style="width: 33rem">
+                  <img src="images/results_table_objects.png" class="card-img-top" alt="Objects results" />
+                </div>
+                <div class="card" style="width: 33rem">
+                  <img src="images/results_table_textures.png" class="card-img-top" alt="Textures results" />
+                </div>
+                <div class="card" style="width: 33rem">
+                  <img src="images/results_table_total.png" class="card-img-top" alt="General results" />
+                </div>
+              </center>
+            </div>
+          </div>
+          <br />
+          <p>
+            Note that the results were consistently better with object type categories rather than with textures.
+            We anticipated this result, since the task of reconstructing images that feature items with an inherently
+            random structure is typically harder for a denoising diffusion model, as it cannot precisely
+            anticipate and reconstruct all of the random features that were degraded after the noise was added
+            to the original image and it ends up making up extra features on its own typically.
+            <br /><br />
+            We will meet this phenomenon again in the 'Findings' section.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Findings section-->
+  <section id="findings" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>
+            Findings
+          </h2>
+          <br />
+          <h4>
+            Successful detections
+          </h4>
+          <div>
+            <div class="justify-content-center">
+              <center>
+                <div class="card" style="width: 50rem">
+                  <img src="images/success_1_2.jpg" class="card-img-top" alt="Objects results" />
+                </div>
+                <div class="card" style="width: 50rem">
+                  <img src="images/success_3_4.jpg" class="card-img-top" alt="Textures results" />
+                </div>
+              </center>
+            </div>
+          </div>
+          <br />
+          <h4>
+            Failed detections
+          </h4>
+          <div>
+            <div class="justify-content-center">
+              <p>
+                In the following failed detection examples the model had failed detecting the anomalies and even
+                incorrectly detected non-anomalous regions as anomalies.
+                <br />
+                This is explained using the same reasoning given in the <a href="#achievements">achievements</a>
+                section.
+              </p>
+              <center>
+                <div class="card" style="width: 33rem">
+                  <img src="images/failed_1_2.jpg" class="card-img-top" alt="Objects results" />
+                </div>
+                <div class="card" style="width: 33rem">
+                  <img src="images/failed_3_4.jpg" class="card-img-top" alt="Textures results" />
+                </div>
+              </center>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Contact section-->
+  <section class="bg-light" id="about" style="padding:50px;">
+    <div class="container px-4">
+      <div class="row gx-4 justify-content-center">
+        <div class="col-lg-8">
+          <h2>About us</h2>
+          <br />
+          <ul>
+            <li><b><u>Students:</u></b></li>
+            <ul>
+              - Tal Afek
+              <dd>Computer Science Engineer</dd>
+            </ul>
+            <ul>
+              - Amit Inbar
+              <dd>Computer Science Engineer</dd>
+            </ul>
+            <li><b><u>Academic Supervisor:</u></b></li>
+            <ul>
+              Mr. Lev Yohananov
+            </ul>
+            <li><b><u>IBM Supervisors:</u></b></li>
+            <ul>
+              - Mr. Eli Schwartz
+            </ul>
+            <ul>
+              - Mr. Assaf Arbelle
+            </ul>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Footer-->
+  <footer class="py-5 bg-dark">
+    <div class="container px-4">
+      <p class="m-0 text-center text-white">
+        Industrial Project mini website
+      </p>
+    </div>
+  </footer>
+  <!-- Bootstrap core JS-->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Core theme JS-->
+  <script src="js/scripts.js"></script>
+</body>
+
+</html>
