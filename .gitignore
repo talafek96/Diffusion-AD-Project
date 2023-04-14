@@ -133,3 +133,7 @@ extern/mvtec_backup/
 # Other trash
 desktop.ini
 output/
+
+# Git management
+.gitattributes
+
