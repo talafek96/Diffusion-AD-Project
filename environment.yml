@@ -1,0 +1,29 @@
+name: diffusion-ad
+channels:
+  - pytorch
+  - conda-forge
+  - intel
+  - anaconda
+  - nvidia
+dependencies:
+  - python>=3.9
+  - pip
+  - numpy
+  - scipy
+  - pytorch>2.0.0
+  - pytorch-cuda=11.8
+  - cudatoolkit
+  - cudnn
+  - torchvision
+  - opencv
+  - pillow
+  - mpi4py
+  - blobfile
+  - matplotlib
+  - ipython
+  - jupyter
+  - tqdm
+  - pandas
+  - scikit-learn
+  - pip:
+    - pytorch-lightning==1.9.4
