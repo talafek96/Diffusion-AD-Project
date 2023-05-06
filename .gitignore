@@ -134,6 +134,3 @@ extern/mvtec_backup/
 desktop.ini
 output/
 
-# Git management
-.gitattributes
-
