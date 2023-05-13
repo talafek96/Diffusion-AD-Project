@@ -134,4 +134,5 @@ extern/mvtec_backup/
 desktop.ini
 output/
 jupyter-lab.sh
+run_jupyter.sh
 
