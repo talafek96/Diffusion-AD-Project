@@ -1,4 +1,5 @@
 import os
+import re
 import torch
 if __name__ == '__main__':
   import import_fixer
@@ -61,7 +62,7 @@ class ModelLoader:
         )
         self.default_args.update(model_and_diffusion_defaults())
 
-    def get_model(self, model_name: str) -> Tuple[UNetModel, GaussianDiffusion]:
+    def get_model(self, model_name: str, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
         """
         Creates UNetModel and GaussianDiffusion objects, and loads the trained model from the disk.
         """
@@ -95,6 +96,11 @@ class ModelLoader:
         if model_diff_flags['use_fp16']:
             model.convert_to_fp16()
         model.eval()
+
+        if to_compile:
+            match = re.match(r'([0-9]+\.[0-9]+)', torch.__version__)
+            if match and float(match.group(1)) >= 2.1:  # PyTorch will not support our model before v2.1
+                model = torch.compile(model)
 
         return model, diffusion
 
