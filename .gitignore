@@ -135,4 +135,4 @@ desktop.ini
 output/
 jupyter-lab.sh
 run_jupyter.sh
-
+.vscode/
