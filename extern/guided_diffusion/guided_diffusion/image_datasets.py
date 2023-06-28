@@ -83,7 +83,7 @@ def _select_count_samples_from(path: str, count: int, deterministic: bool):
     if deterministic:
         return image_files[:count]
     else:
-        return random.sample(_list_image_files_recursively(path), count)
+        return random.sample(image_files, count)
 
 def _list_image_files_recursively(data_dir):
     results = []
