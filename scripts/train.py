@@ -21,7 +21,7 @@ def main():
     args = create_argparser().parse_args()
 
     if (type(args.few_shot_count) not in [int, None]) or (args.few_shot_count is int and args.few_shot_count <= 0):
-        print("few_shot_count argument has to be a non-negative integer if stated.")
+        print("few_shot_count argument has to be a positive integer if stated.")
         exit(1)
 
     dist_util.setup_dist()
