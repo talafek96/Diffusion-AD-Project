@@ -17,6 +17,7 @@ def load_data(
     deterministic=False,
     random_crop=False,
     random_flip=True,
+    few_shot_count=None
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -35,17 +36,25 @@ def load_data(
     :param deterministic: if True, yield results in a deterministic order.
     :param random_crop: if True, randomly crop the images for augmentation.
     :param random_flip: if True, randomly flip the images for augmentation.
+    :param few_shot_count: if not None, the trainer selects few_shot_count samples to train on.
     """
     if not data_dir:
         raise ValueError("unspecified data directory")
-    all_files = _list_image_files_recursively(data_dir)
+    
     classes = None
+
+    if few_shot_count is not None:
+        all_files = _select_count_samples_from(data_dir, few_shot_count, deterministic)
+    else:
+        all_files = _list_image_files_recursively(data_dir)
+
     if class_cond:
         # Assume classes are the first part of the filename,
         # before an underscore.
         class_names = [bf.basename(path).split("_")[0] for path in all_files]
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
+
     dataset = ImageDataset(
         image_size,
         all_files,
@@ -55,6 +64,7 @@ def load_data(
         random_crop=random_crop,
         random_flip=random_flip,
     )
+    
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
@@ -66,6 +76,14 @@ def load_data(
     while True:
         yield from loader
 
+
+def _select_count_samples_from(path: str, count: int, deterministic: bool):
+    image_files = _list_image_files_recursively(path)
+
+    if deterministic:
+        return image_files[:count]
+    else:
+        return random.sample(image_files, count)
 
 def _list_image_files_recursively(data_dir):
     results = []
