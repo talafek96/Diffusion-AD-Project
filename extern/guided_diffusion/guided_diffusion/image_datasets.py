@@ -17,6 +17,8 @@ def load_data(
     deterministic=False,
     random_crop=False,
     random_flip=True,
+    is_few_shot=False,
+    few_shot_count=None
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -38,14 +40,27 @@ def load_data(
     """
     if not data_dir:
         raise ValueError("unspecified data directory")
-    all_files = _list_image_files_recursively(data_dir)
+    
     classes = None
-    if class_cond:
-        # Assume classes are the first part of the filename,
-        # before an underscore.
-        class_names = [bf.basename(path).split("_")[0] for path in all_files]
-        sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-        classes = [sorted_classes[x] for x in class_names]
+
+    if is_few_shot and few_shot_count is not None:
+        samples_dir = bf.join(data_dir, _select_random_class())
+        all_files = _random_select_count_samples_from(samples_dir, few_shot_count)
+
+        if class_cond:
+            pass  # TODO: should we put something here?
+            
+        deterministic = True  # TODO: consider change but we don't really care of Dataloader will shuffle the dataset we provide since we already shuffled inside
+    else:
+        all_files = _list_image_files_recursively(data_dir)
+
+        if class_cond:
+            # Assume classes are the first part of the filename,
+            # before an underscore.
+            class_names = [bf.basename(path).split("_")[0] for path in all_files]
+            sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+            classes = [sorted_classes[x] for x in class_names]
+
     dataset = ImageDataset(
         image_size,
         all_files,
@@ -55,6 +70,7 @@ def load_data(
         random_crop=random_crop,
         random_flip=random_flip,
     )
+    
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
@@ -65,6 +81,14 @@ def load_data(
         )
     while True:
         yield from loader
+
+
+def _select_random_class():
+    return 'hazelnut'  # TODO: obviously change to actually select in random
+
+
+def _random_select_count_samples_from(path: str, count: int):
+    return random.sample(_list_image_files_recursively(path), count)
 
 
 def _list_image_files_recursively(data_dir):

@@ -62,7 +62,7 @@ class ModelLoader:
         )
         self.default_args.update(model_and_diffusion_defaults())
 
-    def get_model(self, model_name: str, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
+    def get_model(self, model_name: str, args: dict=None, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
         """
         Creates UNetModel and GaussianDiffusion objects, and loads the trained model from the disk.
         """
@@ -82,6 +82,8 @@ class ModelLoader:
             type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_flags'])
         model_diff_flags.update(
             {'model_path': type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']})
+        if args is not None:
+            model_diff_flags.update(args)  # TODO: make sure it works as expected
 
         # Create model and diffusion objects
         model, diffusion = create_model_and_diffusion(
