@@ -20,6 +20,10 @@ from utils.models import ModelLoader
 def main():
     args = create_argparser().parse_args()
 
+    if type(args.few_shot_count) not in [int, None] or args.few_shot_count is int and args.few_shot_count <= 0:
+        print("few_shot_count argument has to be a non-negative integer if stated.")
+        exit(1)
+
     dist_util.setup_dist()
     logger.configure()
 
@@ -29,8 +33,8 @@ def main():
     )
 
     model_loader = ModelLoader()
-    model = model_loader.get_model('256x256_uncond', args)  # TODO: maybe set to_compile to True?
-    model.to(dist_util.dev())  # TODO: should we leave it here?
+    model = model_loader.get_model('256x256_uncond', args)
+    model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
     logger.log("creating data loader...")
@@ -39,7 +43,6 @@ def main():
         batch_size=args.batch_size,
         image_size=args.image_size,
         class_cond=args.class_cond,
-        is_few_shot=args.is_few_shot,
         few_shot_count=args.few_shot_count
     )
 
@@ -78,7 +81,6 @@ def create_argparser():
         resume_checkpoint="",
         use_fp16=False,
         fp16_scale_growth=1e-3,
-        is_few_shot=False,
         few_shot_count=None
     )
     defaults.update(model_and_diffusion_defaults())
