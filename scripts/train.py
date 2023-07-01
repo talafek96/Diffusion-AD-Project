@@ -43,7 +43,7 @@ def create_argparser():
         lr_anneal_steps=0,
         batch_size=1,
         microbatch=-1,  # -1 disables microbatches
-        ema_rate="0.9999",  # comma-separated list of EMA values
+        ema_rate="0.999999",  # "0.9999",  # comma-separated list of EMA values
         log_interval=10,
         save_interval=10000,
         resume_checkpoint="",
@@ -86,7 +86,7 @@ def _handle_few_shot_training(args: argparse.Namespace,
         log_interval=args.log_interval,
         save_interval=args.save_interval,
         resume_checkpoint=args.resume_checkpoint,
-        val_data=train_dl,  # val_dl,
+        val_data=val_dl,
         use_fp16=args.use_fp16,
         fp16_scale_growth=args.fp16_scale_growth,
         schedule_sampler=schedule_sampler,
