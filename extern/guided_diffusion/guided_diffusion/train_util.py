@@ -190,6 +190,7 @@ class TrainLoop:
 
         logger.log(f'evaluating reconstruction for target class {target}')
         processed_imgs = []
+
         for image in batch:
             noised_image = noiser.apply_noise(image.unsqueeze(0), timesteps)
             reconstructed_image = denoiser.denoise(noised_image, timesteps, show_progress=False).squeeze(0)
