@@ -178,9 +178,9 @@ class TrainLoop:
         
         # TODO: Evaluate the batch of images and log the resulting figure
         recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
-        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
+        self._log_batch_recon(batch=th.cat(tensors=[data[0] for i, data in enumerate(self.val_data) if i < 2], dim=0).to(dist_util.dev()),
                               dump_path=recon_dump_path,
-                              target=self.target)
+                              target=self.target)  # TODO: Revert the val_data cutting
 
     def _log_batch_recon(self, batch: th.Tensor | List[th.Tensor], dump_path: str, target: str):
         assert target is not None, "`target` evaluation class was None. Expected: str.\nDid you forget to pass the --target argument?"
