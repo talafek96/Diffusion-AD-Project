@@ -1,23 +1,24 @@
 import copy
 import functools
 import os
+from typing import List
 
 import blobfile as bf
 import torch as th
 from torch.utils.data import DataLoader
-from torch.utils.data import DataLoader
 import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
+from cv2 import imwrite
 
 from . import dist_util, logger
 from .fp16_util import MixedPrecisionTrainer
 from .nn import update_ema
 from .resample import LossAwareSampler, UniformSampler
+
 from utils.noiser import TimestepUniformNoiser
 from utils.denoiser import ModelTimestepUniformDenoiser
 from config.configuration import CATEGORY_TO_NOISE_TIMESTEPS
-from cv2 import imwrite
 
 # For ImageNet experiments, this was a good default value.
 # We found that the lg_loss_scale quickly climbed to
@@ -40,17 +41,16 @@ class TrainLoop:
         save_interval,
         resume_checkpoint,
         val_data=None,
-        val_data=None,
         use_fp16=False,
         fp16_scale_growth=1e-3,
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        target: str=None
     ):
         self.model = model
         self.diffusion = diffusion
         self.data = data
-        self.val_data: DataLoader = val_data
         self.val_data: DataLoader = val_data
         self.batch_size = batch_size
         self.microbatch = microbatch if microbatch > 0 else batch_size
@@ -68,6 +68,7 @@ class TrainLoop:
         self.schedule_sampler = schedule_sampler or UniformSampler(diffusion)
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
+        self.target = target
 
         self.step = 0
         self.resume_step = 0
@@ -167,34 +168,36 @@ class TrainLoop:
         all_losses = []
         logger.log(f"Evaluating model at step {self.step + self.resume_step}")
 
-
         with th.no_grad():
             for i, (batch, cond) in enumerate(self.val_data):
                 for loss in self.calculate_losses(batch, cond, should_log=False):
                     all_losses.append(loss.cpu())
-                # TODO: Evaluate the batch of images and log the resulting figure
-                self._log_batch_recon(i, batch)
-
+                
         mean_loss = th.tensor(all_losses).mean().item()
         logger.log(f"\tMean loss on validation data: {mean_loss:.6f}")
+        
+        # TODO: Evaluate the batch of images and log the resulting figure
+        recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
+        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0),
+                              dump_path=recon_dump_path,
+                              target=self.target)
 
-    def _log_batch_recon(self, i, batch):
+    def _log_batch_recon(self, batch: th.Tensor | List[th.Tensor], dump_path: str, target: str):
+        assert target is not None, "`target` evaluation class was None. Expected: str.\nDid you forget to pass the --target argument?"
         noiser = TimestepUniformNoiser(self.diffusion)
         denoiser = ModelTimestepUniformDenoiser(self.model, self.diffusion)
-        timesteps = CATEGORY_TO_NOISE_TIMESTEPS['hazelnut']
-        step = self.step + self.resume_step
+        timesteps = CATEGORY_TO_NOISE_TIMESTEPS[target]
 
-        logger.log(f'logging batch {i}')
-        for j, image in enumerate(batch):
-            og_image_path = os.path.join(logger.get_dir(), 'validations', f'step_{step}_batch_{i}', f'og_img_{j}.jpg')
-            recon_image_path = os.path.join(
-                        logger.get_dir(), 'validations', f'step_{self.step}_batch_{i}', f'recon_img{j}.jpg')
-            noised_image = noiser.apply_noise(image.unsqueeze(0), timesteps)
-            reconstructed_image = denoiser.denoise(noised_image, timesteps, show_progress=False)
+        logger.log(f'evaluating reconstruction for target class {target}')
+        for image in batch:
+            # noised_image = noiser.apply_noise(image.unsqueeze(0), timesteps)
+            # reconstructed_image = denoiser.denoise(noised_image, timesteps, show_progress=False)
+            print('image min: ', image.min(), ", image max: ", image.max())
 
-            imwrite(og_image_path, image)
-            imwrite(recon_image_path, reconstructed_image)
-        logger.log('batch logged')
+        # imwrite(og_image_path, image)
+        # imwrite(recon_image_path, reconstructed_image)
+
+        logger.log(f'dumping result to {dump_path}')
 
     def run_loop(self):
         while (
@@ -207,8 +210,6 @@ class TrainLoop:
                 logger.dumpkvs()
             if self.step % self.save_interval == 0:
                 self.save()
-                if self.val_data is not None:
-                    self._eval()
                 if self.val_data is not None:
                     self._eval()
                 # Run for a finite amount of time in integration tests.
@@ -228,7 +229,6 @@ class TrainLoop:
         self.log_step()
 
     def calculate_losses(self, batch, cond, should_log: bool=True):
-    def calculate_losses(self, batch, cond, should_log: bool=True):
         for i in range(0, batch.shape[0], self.microbatch):
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
             micro_cond = {
@@ -245,19 +245,7 @@ class TrainLoop:
                 t,
                 model_kwargs=micro_cond,
             )
-            compute_losses = functools.partial(
-                self.diffusion.training_losses,
-                self.ddp_model,
-                micro,
-                t,
-                model_kwargs=micro_cond,
-            )
 
-            if last_batch or not self.use_ddp:
-                losses = compute_losses()
-            else:
-                with self.ddp_model.no_sync():
-                    losses = compute_losses()
             if last_batch or not self.use_ddp:
                 losses = compute_losses()
             else:
@@ -270,17 +258,6 @@ class TrainLoop:
                 )
 
             loss = (losses["loss"] * weights).mean()
-
-            if should_log:
-                log_loss_dict(
-                    self.diffusion, t, {k: v * weights for k, v in losses.items()}
-                )
-
-            yield loss
-
-    def forward_backward(self, batch, cond):
-        self.mp_trainer.zero_grad()
-        for loss in self.calculate_losses(batch, cond):
 
             if should_log:
                 log_loss_dict(
