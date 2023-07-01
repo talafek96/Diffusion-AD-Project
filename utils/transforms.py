@@ -41,7 +41,7 @@ def get_transforms(args):
 
     # defining train transform
     if isinstance(args.augment,str):
-        args.augment = [ar gs.augment]
+        args.augment = [args.augment]
 
     train_transforms = []
     for  augment in args.augment:
