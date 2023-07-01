@@ -13,7 +13,7 @@ class Denoiser(ABC):
     An abstract class that acts as an interface for image denoisers.
     """
     @abstractmethod
-    def denoise(self, images: torch.TensorType, *args, **kwargs) -> torch.TensorType:
+    def denoise(self, images: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Takes in a batch of images and denoises them.
 
         The denoising process is dependant on the final class implementation.
@@ -46,10 +46,10 @@ class ModelTimestepUniformDenoiser(Denoiser):
         self.diffusion: GaussianDiffusion = diffusion
 
     def denoise(self, 
-                noisy_images: torch.TensorType, 
+                noisy_images: torch.Tensor, 
                 num_timesteps: int, 
                 clip_denoised: bool=True, 
-                show_progress: bool=False) -> torch.TensorType:
+                show_progress: bool=False) -> torch.Tensor:
         self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
         denoised_images = self.diffusion.p_sample_loop(
             model=self.model,

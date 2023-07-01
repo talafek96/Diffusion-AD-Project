@@ -1,7 +1,7 @@
 import copy
 import functools
 import os
-from typing import List
+from typing import List, Tuple
 
 import blobfile as bf
 import torch as th
@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
-from cv2 import imwrite
+import matplotlib.pyplot as plt
 
 from . import dist_util, logger
 from .fp16_util import MixedPrecisionTrainer
@@ -178,7 +178,7 @@ class TrainLoop:
         
         # TODO: Evaluate the batch of images and log the resulting figure
         recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
-        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0),
+        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
                               dump_path=recon_dump_path,
                               target=self.target)
 
@@ -189,15 +189,43 @@ class TrainLoop:
         timesteps = CATEGORY_TO_NOISE_TIMESTEPS[target]
 
         logger.log(f'evaluating reconstruction for target class {target}')
+        processed_imgs = []
         for image in batch:
-            # noised_image = noiser.apply_noise(image.unsqueeze(0), timesteps)
-            # reconstructed_image = denoiser.denoise(noised_image, timesteps, show_progress=False)
-            print('image min: ', image.min(), ", image max: ", image.max())
-
-        # imwrite(og_image_path, image)
-        # imwrite(recon_image_path, reconstructed_image)
+            noised_image = noiser.apply_noise(image.unsqueeze(0), timesteps)
+            reconstructed_image = denoiser.denoise(noised_image, timesteps, show_progress=False).squeeze(0)
+            processed_imgs.append((((image.cpu() / 2) + 0.5).clip(0, 1).permute(1, 2, 0),
+                                   ((reconstructed_image.cpu() / 2) + 0.5).clip(0, 1).permute(1, 2, 0)))
 
         logger.log(f'dumping result to {dump_path}')
+        self.plot_images(processed_imgs, dump_path)
+
+    @staticmethod
+    def plot_images(image_list: List[Tuple], dump_path: str) -> None:
+        """
+        Plots original and reconstructed images from a list of image tuples.
+
+        Args:
+            image_list (List[Tuple]): A list of tuples containing original and reconstructed images.
+            dump_path (str): The path where the figure will be saved.
+
+        Returns:
+            None
+        """
+        num_images = len(image_list)
+        fig, axs = plt.subplots(num_images, 2, figsize=(10, 10))
+
+        for i, (original_img, reconstructed_img) in enumerate(image_list):
+            axs[i, 0].imshow(original_img)
+            axs[i, 0].axis('off')
+            axs[i, 0].set_title('Original Image')
+
+            axs[i, 1].imshow(reconstructed_img)
+            axs[i, 1].axis('off')
+            axs[i, 1].set_title('Reconstructed Image')
+
+        plt.tight_layout()
+        os.makedirs(os.path.dirname(dump_path), exist_ok=True)
+        plt.savefig(dump_path)
 
     def run_loop(self):
         while (
