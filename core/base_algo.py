@@ -371,16 +371,13 @@ class BaseAlgo(pl.LightningModule):
         return ALL_CATEGORIES - categories_in_file
 
     def _update_results_csv(self, values_dict) -> None:
-        print('Entered update results csv')  # TODO: Remove this
         if self.args.category in set(self.experiment_results_manager.data.category):
-            print('Entered category in results data')  # TODO: Remove this
             mask = (self.experiment_results_manager.data.category != self.args.category)
             self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
         
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        print(f'new_dict is: {new_dict}')  # TODO: Remove this
         self.experiment_results_manager.data = \
             pd.concat(
                 [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]

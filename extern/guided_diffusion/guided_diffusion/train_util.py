@@ -4,10 +4,10 @@ import os
 
 import blobfile as bf
 import torch as th
+from torch.utils.data import DataLoader
 import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
-from torch.cuda.amp import autocast
 
 from . import dist_util, logger
 from .fp16_util import MixedPrecisionTrainer
@@ -34,6 +34,7 @@ class TrainLoop:
         log_interval,
         save_interval,
         resume_checkpoint,
+        val_data=None,
         use_fp16=False,
         fp16_scale_growth=1e-3,
         schedule_sampler=None,
@@ -43,6 +44,7 @@ class TrainLoop:
         self.model = model
         self.diffusion = diffusion
         self.data = data
+        self.val_data: DataLoader = val_data
         self.batch_size = batch_size
         self.microbatch = microbatch if microbatch > 0 else batch_size
         self.lr = lr
@@ -151,6 +153,20 @@ class TrainLoop:
             )
             self.opt.load_state_dict(state_dict)
 
+    def _eval(self):
+        # TODO: Iterating over self.val_data, noise each picture, denoise it, and log
+        #       the original + reconstructed images in one figure into get_dir()/validations/step_{self.step}_batch_{i}.jpg
+        # - Make sure to use `with th.no_grad()`
+        all_losses = []
+        logger.log(f"Evaluating model at step {self.step + self.resume_step}")
+        with th.no_grad():
+            for batch, cond in self.val_data:
+                for loss in self.calculate_losses(batch, cond, should_log=False):
+                    all_losses.append(loss.cpu())
+                # TODO: Evaluate the batch of images and log the resulting figure
+        mean_loss = th.tensor(all_losses).mean().item()
+        logger.log(f"\tMean loss on validation data: {mean_loss:.6f}")
+
     def run_loop(self):
         while (
             not self.lr_anneal_steps
@@ -162,6 +178,8 @@ class TrainLoop:
                 logger.dumpkvs()
             if self.step % self.save_interval == 0:
                 self.save()
+                if self.val_data is not None:
+                    self._eval()
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
@@ -178,8 +196,7 @@ class TrainLoop:
         self._anneal_lr()
         self.log_step()
 
-    def forward_backward(self, batch, cond):
-        self.mp_trainer.zero_grad()
+    def calculate_losses(self, batch, cond, should_log: bool=True):
         for i in range(0, batch.shape[0], self.microbatch):
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
             micro_cond = {
@@ -189,21 +206,19 @@ class TrainLoop:
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
-            # TODO: Check if this works
-            with autocast(dtype=th.bfloat16):
-                compute_losses = functools.partial(
-                    self.diffusion.training_losses,
-                    self.ddp_model,
-                    micro,
-                    t,
-                    model_kwargs=micro_cond,
-                )
+            compute_losses = functools.partial(
+                self.diffusion.training_losses,
+                self.ddp_model,
+                micro,
+                t,
+                model_kwargs=micro_cond,
+            )
 
-                if last_batch or not self.use_ddp:
+            if last_batch or not self.use_ddp:
+                losses = compute_losses()
+            else:
+                with self.ddp_model.no_sync():
                     losses = compute_losses()
-                else:
-                    with self.ddp_model.no_sync():
-                        losses = compute_losses()
 
             if isinstance(self.schedule_sampler, LossAwareSampler):
                 self.schedule_sampler.update_with_local_losses(
@@ -211,9 +226,17 @@ class TrainLoop:
                 )
 
             loss = (losses["loss"] * weights).mean()
-            log_loss_dict(
-                self.diffusion, t, {k: v * weights for k, v in losses.items()}
-            )
+
+            if should_log:
+                log_loss_dict(
+                    self.diffusion, t, {k: v * weights for k, v in losses.items()}
+                )
+
+            yield loss
+
+    def forward_backward(self, batch, cond):
+        self.mp_trainer.zero_grad()
+        for loss in self.calculate_losses(batch, cond):
             self.mp_trainer.backward(loss)
 
     def _update_ema(self):
