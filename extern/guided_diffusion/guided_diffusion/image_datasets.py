@@ -51,7 +51,7 @@ def get_dataloader(
     torch.manual_seed(42)
 
     if few_shot_count is not None:
-            all_files = _select_count_samples_from(data_dir, few_shot_count + validation_size, deterministic)
+        all_files = _select_count_samples_from(data_dir, few_shot_count + validation_size, deterministic)
     else:
         all_files = _list_image_files_recursively(data_dir)
 
