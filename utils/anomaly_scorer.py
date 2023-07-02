@@ -9,11 +9,11 @@ class AnomalyScorer(ABC):
     two corresponding tensors.
     """
 
-    def __call__(self, error_map: torch.TensorType, **kwargs) -> float:
+    def __call__(self, error_map: torch.Tensor, **kwargs) -> float:
         return self.score(error_map=error_map, **kwargs)
 
     @abstractmethod
-    def score(self, error_map: torch.TensorType, **kwargs) -> float:
+    def score(self, error_map: torch.Tensor, **kwargs) -> float:
         """
         Method with which the anomaly scorer calculates the anomaly score.
 
@@ -44,7 +44,7 @@ class MaxValueAnomalyScorer(AnomalyScorer):
     def __init__(self) -> None:
         pass
 
-    def score(self, error_map: torch.TensorType) -> float:
+    def score(self, error_map: torch.Tensor) -> float:
         """
         Calculates the anomaly score using the max value of the error-map.
 

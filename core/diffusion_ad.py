@@ -34,19 +34,19 @@ class DiffusionAD(BaseAlgo):
         self.anomaly_scorer = anomaly_scorer
 
     def get_reconstructed_batch(self,
-                                img: torch.TensorType,
+                                img: torch.Tensor,
                                 noiser: Noiser,
                                 denoiser: Denoiser,
                                 num_timesteps: int,
                                 batch_size: int,
-                                interactive_print: bool = False) -> torch.TensorType:
+                                interactive_print: bool = False) -> torch.Tensor:
         """
         Using a noiser and a denoiser, adds noise for `num_timesteps` steps to the given img
         `batch_size` times, and reconstructs each noised image.
 
         Paramters:
         ----------
-        `img` : torch.TensorType (C, H, W)
+        `img` : torch.Tensor (C, H, W)
             An image stored as a tensor.
         
         `noiser` : Noiser
@@ -99,8 +99,8 @@ class DiffusionAD(BaseAlgo):
         return reconstructed_batch
 
     def evaluate_anomaly(self,
-                         img: torch.TensorType,
-                         reconstructed_batch: torch.TensorType,
+                         img: torch.Tensor,
+                         reconstructed_batch: torch.Tensor,
                          error_map_gen: ErrorMapGenerator,
                          anomaly_scorer: AnomalyScorer) -> Tuple[torch.Tensor, float]:
         """

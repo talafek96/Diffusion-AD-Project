@@ -62,7 +62,7 @@ class ModelLoader:
         )
         self.default_args.update(model_and_diffusion_defaults())
 
-    def get_model(self, model_name: str, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
+    def get_model(self, model_name: str, extra_args: dict=None, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
         """
         Creates UNetModel and GaussianDiffusion objects, and loads the trained model from the disk.
         """
@@ -82,6 +82,8 @@ class ModelLoader:
             type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_flags'])
         model_diff_flags.update(
             {'model_path': type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']})
+        if extra_args is not None:
+            model_diff_flags.update(extra_args)
 
         # Create model and diffusion objects
         model, diffusion = create_model_and_diffusion(
@@ -98,9 +100,10 @@ class ModelLoader:
         model.eval()
 
         if to_compile:
-            match = re.match(r'([0-9]+\.[0-9]+)', torch.__version__)
-            if match and float(match.group(1)) >= 2.1:  # PyTorch will not support our model before v2.1
-                model = torch.compile(model)
+            # match = re.match(r'([0-9]+\.[0-9]+)', torch.__version__)
+            # if match and float(match.group(1)) >= 2.1:  # PyTorch will not support our model before v2.1
+            #     model = torch.compile(model)
+            pass  # Still unsupported :')
 
         return model, diffusion
 
