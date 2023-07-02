@@ -26,7 +26,7 @@ DEFAULT_LOG_BASE = os.path.abspath(
 os.makedirs(DEFAULT_LOG_BASE, exist_ok=True)
 tempfile.tempdir = DEFAULT_LOG_BASE
 BASE_DATA_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', 'extern', 'mvtec', 'few_shot'))
+    os.path.dirname(__file__), '..', 'extern', 'mvtec'))
 
 
 def dl_wrapper(dl):
