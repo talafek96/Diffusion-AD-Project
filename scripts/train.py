@@ -19,10 +19,10 @@ from guided_diffusion.script_util import (
 )
 from guided_diffusion.train_util import TrainLoop
 from utils.models import ModelLoader
+from config.configuration import DEFAULT_ROOT_OUTPUT_DIR
 
 
-DEFAULT_LOG_BASE = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'tmp'))
+DEFAULT_LOG_BASE = DEFAULT_ROOT_OUTPUT_DIR
 os.makedirs(DEFAULT_LOG_BASE, exist_ok=True)
 tempfile.tempdir = DEFAULT_LOG_BASE
 BASE_DATA_DIR = os.path.abspath(os.path.join(

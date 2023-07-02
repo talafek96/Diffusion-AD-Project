@@ -4,7 +4,7 @@ from pandas import DataFrame, read_csv
 from config.configuration import DEFAULT_CSV_DATA_PATH, DEFAULT_RESULTS_COLUMNS
 
 
-class DataFrameManager:
+class PersistentDataFrame:
     """
     A logging class managing loading, updating and storing the experiments data.
 
@@ -12,13 +12,13 @@ class DataFrameManager:
     ------
 
     Init:
-    >>> df_manager = DataFrameManager(csv_path)
+    >>> persistent_df = PersistentDataFrame(csv_path)
 
     Getting the current DataFrame stored in the csv and in memory:
-    >>> df = df_manager.data
+    >>> df = persistent_df.data
 
     Updating the DataFrame presistently:
-    >>> df_manager.data = new_df
+    >>> persistent_df.data = new_df
     """
 
     _data_df: DataFrame

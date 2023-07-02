@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
-from utils.data_frame_manager import DataFrameManager
+from utils.data_frame_manager import PersistentDataFrame
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
     UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS
@@ -98,7 +98,7 @@ class BaseAlgo(pl.LightningModule):
         A boolean flag, if True saves the heatmaps and scores.
     """
 
-    def __init__(self, hparams):
+    def __init__(self, hparams, model_name: str = "Unknown model name"):
         super(BaseAlgo, self).__init__()
         self.args = hparams
         
@@ -113,7 +113,8 @@ class BaseAlgo(pl.LightningModule):
         if 'max_test_imgs' not in self.args:
             self.args.max_test_imgs = UNLIMITED_MAX_TEST_IMAGES
         
-        self.experiment_results_manager = DataFrameManager(self.args.results_csv_path, columns=DEFAULT_RESULTS_COLUMNS)
+        self.experiment_results_manager = PersistentDataFrame(self.args.results_csv_path, columns=DEFAULT_RESULTS_COLUMNS)
+        self.model_name = model_name
 
         self.save_hyperparameters(hparams)
         self.init_results_list()
@@ -371,26 +372,31 @@ class BaseAlgo(pl.LightningModule):
         return ALL_CATEGORIES - categories_in_file
 
     def _update_results_csv(self, values_dict) -> None:
-        if self.args.category in set(self.experiment_results_manager.data.category):
-            mask = (self.experiment_results_manager.data.category != self.args.category)
+        key = [self.args.category, self.model_name]
+        if self.experiment_results_manager.data[['category', 'model_name']].isin(key).any(axis=1).any():
+            # Key match found, overwriting
+            mask = (self.experiment_results_manager.data[['category', 'model_name']] != key)
             self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
         
         new_dict = values_dict.copy()
         new_dict['category'] = self.args.category
         new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
+        new_dict['model_name'] = self.model_name
         self.experiment_results_manager.data = \
             pd.concat(
                 [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
-            ).reset_index(drop=True).sort_values(['category_type', 'category'])
+            ).reset_index(drop=True).sort_values(['model_name', 'category_type', 'category'])
 
     def _get_categories_in_data_file(self) -> Set:
         """
-        Getting a list of the categories from experiment_results_manager.
-        
+        Getting a list of the categories from experiment_results_manager that correspond
+        to the `self.model_name` model.
+
         Return: Set[str]
         -------
         A set of strings denoting the categories stored in the data file.
         """
-        categories = set(self.experiment_results_manager.data["category"])
+        categories = set(
+            self.experiment_results_manager.data.loc[self.experiment_results_manager.data["model_name"] == self.model_name, "category"].unique())
         
         return categories
