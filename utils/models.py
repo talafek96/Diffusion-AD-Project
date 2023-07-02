@@ -132,6 +132,9 @@ class ModelLoader:
             str: The extracted model name or the original model name if path is not provided.
         """
         if path is None:
+            if model_name not in type(self).MODEL_TO_ARG_SPECIFICS:
+                raise RuntimeError(f'Input model_name is {model_name} and not found inside the ModelLoader class configuration dictionary!')
+
             return model_name
 
         path_obj = Path(path)

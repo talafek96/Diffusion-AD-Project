@@ -4,6 +4,8 @@ from typing import List
 import tempfile
 import pytorch_lightning as pl
 from guided_diffusion import logger
+from guided_diffusion.unet import UNetModel
+from guided_diffusion.gaussian_diffusion import GaussianDiffusion
 from utils.models import ModelLoader
 from utils.noiser import TimestepUniformNoiser
 from utils.denoiser import ModelTimestepUniformDenoiser
@@ -55,13 +57,7 @@ def parse_arguments():
     return args
 
 
-def run_benchmark(model_path: str, target_categories: List[str], should_overwrite: bool = False):
-    # Load the model
-    loader = ModelLoader()
-    model_name = loader.get_model_name('256x256_uncond', path=model_path)
-    logger.log(f"Loading model {model_name}...")
-    model, diffusion = loader.get_model('256x256_uncond', path=model_path)
-
+def create_diffusion_ad(model: UNetModel, diffusion: GaussianDiffusion, model_name: str) -> DiffusionAD:
     # Create the components
     logger.log("Creating benchmark components and trainer...")
     noiser = TimestepUniformNoiser(diffusion)
@@ -76,6 +72,18 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
         anomaly_scorer,
         DIFFUSION_AD_HPARAMS,
         model_name=model_name)
+    
+    return diffusion_ad
+
+
+def run_benchmark(model_path: str, target_categories: List[str], should_overwrite: bool = False):
+    # Load the model
+    loader = ModelLoader()
+    model_name = loader.get_model_name('256x256_uncond', path=model_path)
+    logger.log(f"Loading model {model_name}...")
+    model, diffusion = loader.get_model('256x256_uncond', path=model_path)
+
+    diffusion_ad = create_diffusion_ad(model, diffusion, model_name)
 
     # Create a PyTorch Lightning trainer for each target
     trainer = {
@@ -107,11 +115,11 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
 
 
 def main():
-    # Setup logger
-    logger.configure()
-
     # Parse command-line arguments
     args = parse_arguments()
+
+    # Setup logger
+    logger.configure()
 
     # Load the model based on the provided path or default value
     model_path: str = args.model
