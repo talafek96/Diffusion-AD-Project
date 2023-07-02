@@ -5,6 +5,7 @@ Train a diffusion model on images.
 import argparse
 import os
 import tempfile
+import torch
 
 from guided_diffusion import dist_util, logger
 from guided_diffusion.unet import UNetModel
@@ -87,12 +88,12 @@ def _handle_few_shot_training(args: argparse.Namespace,
         log_interval=args.log_interval,
         save_interval=args.save_interval,
         resume_checkpoint=args.resume_checkpoint,
-        val_data=val_dl,
         use_fp16=args.use_fp16,
         fp16_scale_growth=args.fp16_scale_growth,
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
+        val_data=val_dl,
         target=args.target,
         save_opt=args.save_opt,
         save_ema=args.save_ema
@@ -143,6 +144,7 @@ def main():
         print("few_shot_count argument has to be a positive integer if stated.")
         exit(1)
 
+    torch.manual_seed(42)  # Set manual seed for reproducibility
     dist_util.setup_dist()
     logger.configure(dir=args.log_dir)
 

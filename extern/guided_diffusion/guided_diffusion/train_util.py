@@ -40,12 +40,12 @@ class TrainLoop:
         log_interval,
         save_interval,
         resume_checkpoint,
-        val_data=None,
         use_fp16=False,
         fp16_scale_growth=1e-3,
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        val_data=None,
         target: str=None,
         save_opt: bool=True,
         save_ema: bool=True

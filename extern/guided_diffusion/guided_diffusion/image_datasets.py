@@ -48,8 +48,6 @@ def get_dataloader(
     
     classes = None
 
-    torch.manual_seed(42)
-
     if few_shot_count is not None:
         all_files = _select_count_samples_from(data_dir, few_shot_count + validation_size, deterministic)
     else:
