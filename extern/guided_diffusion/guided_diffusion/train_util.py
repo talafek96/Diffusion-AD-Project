@@ -184,10 +184,11 @@ class TrainLoop:
         mean_loss = th.tensor(all_losses).mean().item()
         logger.log(f"\tMean loss on validation data: {mean_loss:.6f}")
 
-        recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
-        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
-                              dump_path=recon_dump_path,
-                              target=self.target)
+        with th.no_grad():
+            recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
+            self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
+                                  dump_path=recon_dump_path,
+                                  target=self.target)
 
     def _log_batch_recon(self, batch: th.Tensor | List[th.Tensor], dump_path: str, target: str):
         """
