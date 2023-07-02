@@ -89,7 +89,7 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
     trainer = {
         target: pl.Trainer.from_argparse_args(diffusion_ad.args,
                                               default_root_dir=os.path.join(
-                                                  diffusion_ad.args.root_output_dir, target),
+                                                  diffusion_ad.args.root_output_dir, model_name, target),
                                               max_epochs=diffusion_ad.args.num_epochs,
                                               accelerator='gpu',
                                               devices=1)
