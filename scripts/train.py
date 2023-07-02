@@ -51,7 +51,9 @@ def create_argparser():
         fp16_scale_growth=1e-3,
         few_shot_count=10,
         val_size=2,
-        target=None
+        target=None,
+        save_opt=True,
+        save_ema=True
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
@@ -92,7 +94,9 @@ def _handle_few_shot_training(args: argparse.Namespace,
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
-        target=target
+        target=target,
+        save_opt=args.save_opt,
+        save_ema=args.save_ema
     ).run_loop()
 
 
@@ -127,6 +131,8 @@ def _handle_training(args: argparse.Namespace,
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
+        save_opt=args.save_opt,
+        save_ema=args.save_ema
     ).run_loop()
 
 
