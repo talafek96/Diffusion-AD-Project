@@ -98,7 +98,7 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
 
     remaining_categories = diffusion_ad.get_remaining_categories()
     logger.log(f'Target categories: {target_categories}\n'
-               f'Remaining categories: {target_categories & remaining_categories}\n'
+               f'Remaining categories: {set(target_categories) & remaining_categories}\n'
                f'Overwrite: {should_overwrite}')
 
     for category in target_categories:
