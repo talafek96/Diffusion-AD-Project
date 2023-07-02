@@ -46,7 +46,9 @@ class TrainLoop:
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
-        target: str=None
+        target: str=None,
+        save_opt: bool=True,
+        save_ema: bool=True
     ):
         self.model = model
         self.diffusion = diffusion
@@ -69,6 +71,8 @@ class TrainLoop:
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
         self.target = target
+        self.save_opt = save_opt
+        self.save_ema = save_ema
 
         self.step = 0
         self.resume_step = 0
@@ -340,16 +344,18 @@ class TrainLoop:
                 with bf.BlobFile(bf.join(get_blob_logdir(), filename), "wb") as f:
                     th.save(state_dict, f)
 
-        save_checkpoint(0, self.mp_trainer.master_params)
-        for rate, params in zip(self.ema_rate, self.ema_params):
-            save_checkpoint(rate, params)
+        save_checkpoint(0, self.mp_trainer.master_params)  # Save model
 
-        if dist.get_rank() == 0:
+        if self.save_ema:
+            for rate, params in zip(self.ema_rate, self.ema_params):
+                save_checkpoint(rate, params)  # Save EMA params
+
+        if self.save_opt and dist.get_rank() == 0:
             with bf.BlobFile(
                 bf.join(get_blob_logdir(), f"opt{(self.step+self.resume_step):06d}.pt"),
                 "wb",
             ) as f:
-                th.save(self.opt.state_dict(), f)
+                th.save(self.opt.state_dict(), f)  # Save optimizer params
 
         dist.barrier()
 
