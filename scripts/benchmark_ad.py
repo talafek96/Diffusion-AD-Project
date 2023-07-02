@@ -84,6 +84,7 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
     model, diffusion = loader.get_model('256x256_uncond', path=model_path)
 
     diffusion_ad = create_diffusion_ad(model, diffusion, model_name)
+    os.makedirs(os.path.join(diffusion_ad.args.root_output_dir, model_name))
 
     # Create a PyTorch Lightning trainer for each target
     trainer = {
