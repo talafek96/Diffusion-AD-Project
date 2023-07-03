@@ -84,13 +84,12 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
     model, diffusion = loader.get_model('256x256_uncond', path=model_path)
 
     diffusion_ad = create_diffusion_ad(model, diffusion, model_name)
-    os.makedirs(os.path.join(diffusion_ad.args.root_output_dir, model_name))
 
     # Create a PyTorch Lightning trainer for each target
     trainer = {
         target: pl.Trainer.from_argparse_args(diffusion_ad.args,
                                               default_root_dir=os.path.join(
-                                                  diffusion_ad.args.root_output_dir, model_name, target),
+                                                  diffusion_ad.args.root_output_dir, target),
                                               max_epochs=diffusion_ad.args.num_epochs,
                                               accelerator='gpu',
                                               devices=1)
