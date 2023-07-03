@@ -72,7 +72,7 @@ def create_diffusion_ad(model: UNetModel, diffusion: GaussianDiffusion, model_na
         anomaly_scorer,
         DIFFUSION_AD_HPARAMS,
         model_name=model_name)
-    
+
     return diffusion_ad
 
 
@@ -86,10 +86,13 @@ def run_benchmark(model_path: str, target_categories: List[str], should_overwrit
     diffusion_ad = create_diffusion_ad(model, diffusion, model_name)
 
     # Create a PyTorch Lightning trainer for each target
+    log_dir_base = os.path.join(diffusion_ad.args.root_output_dir, model_name)
+    logger.log(
+        f"Creating trainers and setting base log path to '{log_dir_base}'")
     trainer = {
         target: pl.Trainer.from_argparse_args(diffusion_ad.args,
                                               default_root_dir=os.path.join(
-                                                  diffusion_ad.args.root_output_dir, target),
+                                                  log_dir_base, target),
                                               max_epochs=diffusion_ad.args.num_epochs,
                                               accelerator='gpu',
                                               devices=1)
