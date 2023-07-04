@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
 from scipy.ndimage import gaussian_filter
 from utils.dataset import MVTecDataset, FilelistDataset, ListDataset, FolderDataset
-from utils.data_frame_manager import PersistentDataFrame
+from utils.persistent_data_frame import PersistentDataFrame
 from utils.transforms import get_transforms
 from config.configuration import MAGIC_NORMALIZE_MEAN, MAGIC_NORMALIZE_STD, CATEGORY_TO_V_MIN_MAX, DEFAULT_AUGMENT_NAME, \
     UNLIMITED_MAX_TEST_IMAGES, CATEGORY_TO_TYPE, DEFAULT_RESULTS_COLUMNS
