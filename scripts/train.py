@@ -6,6 +6,7 @@ import argparse
 import os
 import tempfile
 import torch
+from pathlib import Path
 
 from guided_diffusion import dist_util, logger
 from guided_diffusion.unet import UNetModel
@@ -24,7 +25,7 @@ from config.configuration import DEFAULT_ROOT_OUTPUT_DIR
 
 DEFAULT_LOG_BASE = DEFAULT_ROOT_OUTPUT_DIR
 os.makedirs(DEFAULT_LOG_BASE, exist_ok=True)
-tempfile.tempdir = DEFAULT_LOG_BASE
+tempfile.tempdir = Path(DEFAULT_LOG_BASE)
 BASE_DATA_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', 'extern', 'mvtec'))
 
@@ -54,7 +55,8 @@ def create_argparser():
         val_size=2,
         target=None,
         save_opt=True,
-        save_ema=True
+        save_ema=True,
+        steps_limit=0
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
@@ -96,7 +98,8 @@ def _handle_few_shot_training(args: argparse.Namespace,
         val_data=val_dl,
         target=args.target,
         save_opt=args.save_opt,
-        save_ema=args.save_ema
+        save_ema=args.save_ema,
+        steps_limit=args.steps_limit
     ).run_loop()
 
 
@@ -132,13 +135,16 @@ def _handle_training(args: argparse.Namespace,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         save_opt=args.save_opt,
-        save_ema=args.save_ema
+        save_ema=args.save_ema,
+        steps_limit=args.steps_limit
     ).run_loop()
 
 
 def main():
     args = create_argparser().parse_args()
     assert 'few_shot_count' not in args.__dict__ or 'target' in args.__dict__, "ERROR: Please provide a target for few-shot training"
+    if 'target' in args.__dict__:
+        tempfile.tempdir /= args.target
 
     if (type(args.few_shot_count) not in [int, None]) or (args.few_shot_count is int and args.few_shot_count <= 0):
         print("few_shot_count argument has to be a positive integer if stated.")
