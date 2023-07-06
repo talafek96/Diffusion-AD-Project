@@ -1,4 +1,5 @@
 import torch
+from time import time
 from typing import Optional
 if __name__ == '__main__':
     import import_fixer
@@ -72,7 +73,11 @@ class ModelTimestepDirectDenoiser(ModelTimestepUniformDenoiser):
     def denoise(self, 
                 noisy_images: torch.Tensor, 
                 num_timesteps: int, 
-                clip_denoised: bool=True) -> torch.Tensor:
+                clip_denoised: bool=True,
+                show_progress: bool=False) -> torch.Tensor:
+        if show_progress:
+            tic = time()
+
         device = next(self.model.parameters()).device
         self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
         denoised_images = self.diffusion.p_sample(
@@ -82,5 +87,9 @@ class ModelTimestepDirectDenoiser(ModelTimestepUniformDenoiser):
             clip_denoised=clip_denoised,
             device=device
         )
+
+        if show_progress:
+            toc = time()
+            print(f"Denoising took a total of {toc - tic:.3f} second(s).")
 
         return denoised_images['pred_xstart']
