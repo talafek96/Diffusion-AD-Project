@@ -138,7 +138,7 @@ class ModelLoader:
             return model_name
 
         path_obj = Path(path)
-        return path_obj.name
+        return path_obj.stem
 
 
 if __name__ == '__main__':

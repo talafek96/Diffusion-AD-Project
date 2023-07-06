@@ -2,11 +2,13 @@ import os
 from typing import List
 from pandas import DataFrame, read_csv
 from config.configuration import DEFAULT_CSV_DATA_PATH, DEFAULT_RESULTS_COLUMNS
+from filelock import FileLock
 
 
 class PersistentDataFrame:
     """
     A logging class managing loading, updating and storing the experiments data.
+    extra feature: this class is atomic and fit for concurrent processing.
 
     Usage:
     ------
@@ -27,18 +29,21 @@ class PersistentDataFrame:
     is_loaded: bool
     columns: List[str]
     data: DataFrame
+    lock: FileLock
 
     @property
     def data(self) -> DataFrame:
         if not self.is_loaded:
-            self._load_data()
+            with self.lock:
+                self._load_data()
         
         return self._data_df
     
     @data.setter
     def data(self, value: DataFrame):
         self._data_df = value.copy(deep=True)
-        self._update_data_file(self._data_df)
+        with self.lock:
+            self._update_data_file(self._data_df)
 
     def __init__(self, data_path: str=DEFAULT_CSV_DATA_PATH, columns: List[str]=None):
         if not columns:
@@ -47,6 +52,7 @@ class PersistentDataFrame:
         self.path = data_path
         self.is_loaded = False
         self.columns = columns
+        self.lock = FileLock(f'{self.path}.lock')
 
     def _load_data(self):
         """
