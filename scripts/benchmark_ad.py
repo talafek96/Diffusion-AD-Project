@@ -8,7 +8,7 @@ from guided_diffusion.unet import UNetModel
 from guided_diffusion.gaussian_diffusion import GaussianDiffusion
 from utils.models import ModelLoader
 from utils.noiser import TimestepUniformNoiser
-from utils.denoiser import ModelTimestepUniformDenoiser
+from utils.denoiser import ModelTimestepUniformDenoiser, ModelTimestepDirectDenoiser
 from utils.error_map import BatchFilteredSquaredError
 from utils.anomaly_scorer import MaxValueAnomalyScorer
 from core.diffusion_ad import DiffusionAD
@@ -28,12 +28,15 @@ def parse_arguments():
     # Add arguments
     parser.add_argument('--model', type=str, default=ModelLoader.MODEL_TO_ARG_SPECIFICS['256x256_uncond']['model_path'],
                         help='Path to the model. Default: %(default)s')
-    parser.add_argument('--targets', type=str, nargs='+', choices=CATEGORY_TO_TYPE.keys(),
+    parser.add_argument('--targets', '--target', type=str, nargs='+', choices=CATEGORY_TO_TYPE.keys(),
                         help='Target categories (space-separated)')
     parser.add_argument('--overwrite', action='store_true', default=False,
                         help='Allow overwriting previous result for a target category')
     parser.add_argument('--reconstruction-batch-size', type=int, default=DIFFUSION_AD_HPARAMS.reconstruction_batch_size,
                         help='Size of the reconstruction batch. Default: %(default)s')
+    parser.add_argument('--direct-denoise', '-dd', action='store_true', default=False,
+                        help='Denoise the noised images by directly predicting the original image at t = 0.\n'
+                             'Uses the denoiser `ModelTimestepDirectDenoiser`.')
 
     # Summary of the pipeline
     pipeline_summary = '''
@@ -57,11 +60,12 @@ def parse_arguments():
     return args
 
 
-def create_diffusion_ad(model: UNetModel, diffusion: GaussianDiffusion, model_name: str) -> DiffusionAD:
+def create_diffusion_ad(model: UNetModel, diffusion: GaussianDiffusion, model_name: str, use_direct_denoise: bool=False) -> DiffusionAD:
     # Create the components
     logger.log("Creating benchmark components and trainer...")
     noiser = TimestepUniformNoiser(diffusion)
-    denoiser = ModelTimestepUniformDenoiser(model, diffusion)
+    denoiser_class = ModelTimestepDirectDenoiser if use_direct_denoise else ModelTimestepUniformDenoiser
+    denoiser = denoiser_class(model, diffusion)
     anomaly_map_generator = BatchFilteredSquaredError()
     anomaly_scorer = MaxValueAnomalyScorer()
 
@@ -76,14 +80,14 @@ def create_diffusion_ad(model: UNetModel, diffusion: GaussianDiffusion, model_na
     return diffusion_ad
 
 
-def run_benchmark(model_path: str, target_categories: List[str], should_overwrite: bool = False):
+def run_benchmark(model_path: str, target_categories: List[str], should_overwrite: bool=False, use_direct_denoise: bool=False):
     # Load the model
     loader = ModelLoader()
     model_name = loader.get_model_name('256x256_uncond', path=model_path)
     logger.log(f"Loading model {model_name}...")
     model, diffusion = loader.get_model('256x256_uncond', path=model_path)
 
-    diffusion_ad = create_diffusion_ad(model, diffusion, model_name)
+    diffusion_ad = create_diffusion_ad(model, diffusion, model_name, use_direct_denoise)
 
     # Create a PyTorch Lightning trainer for each target
     log_dir_base = os.path.join(diffusion_ad.args.root_output_dir, model_name)
@@ -134,7 +138,7 @@ def main():
     DIFFUSION_AD_HPARAMS.reconstruction_batch_size = args.reconstruction_batch_size
 
     # Run the benchmark pipeline
-    run_benchmark(model_path, target_categories, args.overwrite)
+    run_benchmark(model_path, target_categories, args.overwrite, args.direct_denoise)
 
 
 if __name__ == '__main__':
