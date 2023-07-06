@@ -84,8 +84,7 @@ class ModelTimestepDirectDenoiser(ModelTimestepUniformDenoiser):
             model=self.model,
             x=noisy_images,
             t=torch.tensor([num_timesteps] * noisy_images.shape[0], device=device),
-            clip_denoised=clip_denoised,
-            device=device
+            clip_denoised=clip_denoised
         )
 
         if show_progress:
