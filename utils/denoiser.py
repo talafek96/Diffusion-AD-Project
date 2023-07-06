@@ -1,4 +1,5 @@
 import torch
+from typing import Optional
 if __name__ == '__main__':
     import import_fixer
 else:
@@ -35,7 +36,7 @@ class ModelTimestepUniformDenoiser(Denoiser):
     """
     A denoiser instance that uses a trained 256x256 class unconditional DDM
     in order to undo noise from a batch of images for a number of desired 
-    timesteps thus denoising them.
+    timesteps progressively thus denoising them.
     """
 
     model: UNetModel
@@ -60,3 +61,26 @@ class ModelTimestepUniformDenoiser(Denoiser):
         )
 
         return denoised_images
+
+class ModelTimestepDirectDenoiser(ModelTimestepUniformDenoiser):
+    """
+    A denoiser instance that uses a trained 256x256 class unconditional DDM
+    in order to undo noise from a batch of images for a number of desired 
+    timesteps by directly predicting the image at t = 0.
+    """
+
+    def denoise(self, 
+                noisy_images: torch.Tensor, 
+                num_timesteps: int, 
+                clip_denoised: bool=True) -> torch.Tensor:
+        device = next(self.model.parameters()).device
+        self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
+        denoised_images = self.diffusion.p_sample(
+            model=self.model,
+            x=noisy_images,
+            t=torch.tensor([num_timesteps] * noisy_images.shape[0], device=device),
+            clip_denoised=clip_denoised,
+            device=device
+        )
+
+        return denoised_images['pred_xstart']
