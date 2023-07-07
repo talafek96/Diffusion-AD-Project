@@ -375,11 +375,11 @@ class BaseAlgo(pl.LightningModule):
         with self.experiment_results_manager.lock:
             self.experiment_results_manager.reload_data()
             key = [self.args.category, self.model_name]
-            if self.experiment_results_manager.data[['category', 'model_name']].isin(key).any(axis=1).any():
+            if self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1).any():
                 # Key match found, overwriting
-                mask = (self.experiment_results_manager.data[['category', 'model_name']] != key)
+                mask = ~self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1)
                 self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
-            
+
             new_dict = values_dict.copy()
             new_dict['category'] = self.args.category
             new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
