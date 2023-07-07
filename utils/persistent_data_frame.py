@@ -8,7 +8,12 @@ from filelock import FileLock
 class PersistentDataFrame:
     """
     A logging class managing loading, updating and storing the experiments data.
-    extra feature: this class is atomic and fit for concurrent processing.
+    This class is supports atomic operations and is fit for concurrent processing.
+    However, for multiple operations, please explicitly acquire a lock. Example:
+    >>> per_df = PersistentDataFrame(csv_path)  # this csv is accessed by multiple processes
+    >>> with per_df.lock: 
+    >>>     per_df.reload_data()  # Probably reload the data in case another process altered it
+    >>>     ...  # Multiple operations   
 
     Usage:
     ------
