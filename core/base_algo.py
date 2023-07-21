@@ -375,6 +375,7 @@ class BaseAlgo(pl.LightningModule):
         with self.experiment_results_manager.lock:
             self.experiment_results_manager.reload_data()
             key = [self.args.category, self.model_name]
+
             if self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1).any():
                 # Key match found, overwriting
                 mask = ~self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1)
