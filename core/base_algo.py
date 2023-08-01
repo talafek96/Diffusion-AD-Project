@@ -372,20 +372,23 @@ class BaseAlgo(pl.LightningModule):
         return ALL_CATEGORIES - categories_in_file
 
     def _update_results_csv(self, values_dict) -> None:
-        key = [self.args.category, self.model_name]
-        if self.experiment_results_manager.data[['category', 'model_name']].isin(key).any(axis=1).any():
-            # Key match found, overwriting
-            mask = (self.experiment_results_manager.data[['category', 'model_name']] != key)
-            self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
-        
-        new_dict = values_dict.copy()
-        new_dict['category'] = self.args.category
-        new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
-        new_dict['model_name'] = self.model_name
-        self.experiment_results_manager.data = \
-            pd.concat(
-                [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
-            ).reset_index(drop=True).sort_values(['model_name', 'category_type', 'category'])
+        with self.experiment_results_manager.lock:
+            self.experiment_results_manager.reload_data()
+            key = [self.args.category, self.model_name]
+
+            if self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1).any():
+                # Key match found, overwriting
+                mask = ~self.experiment_results_manager.data[['category', 'model_name']].isin(key).all(axis=1)
+                self.experiment_results_manager.data = self.experiment_results_manager.data[mask]
+
+            new_dict = values_dict.copy()
+            new_dict['category'] = self.args.category
+            new_dict['category_type'] = CATEGORY_TO_TYPE[self.args.category]
+            new_dict['model_name'] = self.model_name
+            self.experiment_results_manager.data = \
+                pd.concat(
+                    [self.experiment_results_manager.data, pd.DataFrame(new_dict, index=[0])]
+                ).reset_index(drop=True).sort_values(['model_name', 'category_type', 'category'])
 
     def _get_categories_in_data_file(self) -> Set:
         """
@@ -396,7 +399,9 @@ class BaseAlgo(pl.LightningModule):
         -------
         A set of strings denoting the categories stored in the data file.
         """
-        categories = set(
-            self.experiment_results_manager.data.loc[self.experiment_results_manager.data["model_name"] == self.model_name, "category"].unique())
+        with self.experiment_results_manager.lock:
+            self.experiment_results_manager.reload_data()
+            categories = set(
+                self.experiment_results_manager.data.loc[self.experiment_results_manager.data["model_name"] == self.model_name, "category"].unique())
         
         return categories
