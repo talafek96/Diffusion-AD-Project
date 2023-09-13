@@ -1,4 +1,6 @@
 import torch
+from time import time
+from typing import Optional
 if __name__ == '__main__':
     import import_fixer
 else:
@@ -13,7 +15,7 @@ class Denoiser(ABC):
     An abstract class that acts as an interface for image denoisers.
     """
     @abstractmethod
-    def denoise(self, images: torch.TensorType, *args, **kwargs) -> torch.TensorType:
+    def denoise(self, images: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Takes in a batch of images and denoises them.
 
         The denoising process is dependant on the final class implementation.
@@ -35,7 +37,7 @@ class ModelTimestepUniformDenoiser(Denoiser):
     """
     A denoiser instance that uses a trained 256x256 class unconditional DDM
     in order to undo noise from a batch of images for a number of desired 
-    timesteps thus denoising them.
+    timesteps progressively thus denoising them.
     """
 
     model: UNetModel
@@ -46,10 +48,10 @@ class ModelTimestepUniformDenoiser(Denoiser):
         self.diffusion: GaussianDiffusion = diffusion
 
     def denoise(self, 
-                noisy_images: torch.TensorType, 
+                noisy_images: torch.Tensor, 
                 num_timesteps: int, 
                 clip_denoised: bool=True, 
-                show_progress: bool=False) -> torch.TensorType:
+                show_progress: bool=False) -> torch.Tensor:
         self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
         denoised_images = self.diffusion.p_sample_loop(
             model=self.model,
@@ -60,3 +62,33 @@ class ModelTimestepUniformDenoiser(Denoiser):
         )
 
         return denoised_images
+
+class ModelTimestepDirectDenoiser(ModelTimestepUniformDenoiser):
+    """
+    A denoiser instance that uses a trained 256x256 class unconditional DDM
+    in order to undo noise from a batch of images for a number of desired 
+    timesteps by directly predicting the image at t = 0.
+    """
+
+    def denoise(self, 
+                noisy_images: torch.Tensor, 
+                num_timesteps: int, 
+                clip_denoised: bool=True,
+                show_progress: bool=False) -> torch.Tensor:
+        if show_progress:
+            tic = time()
+
+        device = next(self.model.parameters()).device
+        self.diffusion.num_timesteps = num_timesteps  # Set the number of time-steps.
+        denoised_images = self.diffusion.p_sample(
+            model=self.model,
+            x=noisy_images,
+            t=torch.tensor([num_timesteps] * noisy_images.shape[0], device=device),
+            clip_denoised=clip_denoised
+        )
+
+        if show_progress:
+            toc = time()
+            print(f"Denoising took a total of {toc - tic:.3f} second(s).")
+
+        return denoised_images['pred_xstart']
