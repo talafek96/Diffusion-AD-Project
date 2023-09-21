@@ -4,7 +4,9 @@ from copy import deepcopy
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
 
-
+"""
+Note: Thank you Eliyahu Schwartz for this utility module.
+"""
 class TwoCropsTransform:
     """Take two random crops of one image as the query and key."""
 

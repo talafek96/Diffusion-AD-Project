@@ -7,6 +7,11 @@ from PIL import Image
 import random
 import torchvision.transforms as transforms
 
+"""
+Note: 
+This module is a revamped version of extern/guided_diffusion/image_datasets.py
+"""
+
 class FilelistDataset(Dataset):
     def __init__(self, root, transform, phase, category):
         self.class_list = ['good', 'anomaly']
