@@ -13,7 +13,7 @@ class Noiser(ABC):
     An abstract class that acts as an interface for image noisers.
     """
     @abstractmethod
-    def apply_noise(self, images: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+    def apply_noise(self, images: torch.TensorType, *args, **kwargs) -> torch.TensorType:
         """
         Takes in a batch of images and adds noise to them.
 
@@ -43,9 +43,9 @@ class TimestepUniformNoiser(Noiser):
         self.diffusion = diffusion
 
     def apply_noise(self, 
-                    images: torch.Tensor, 
+                    images: torch.TensorType, 
                     num_timesteps: int, 
-                    noise_tensor: torch.Tensor=None) -> torch.Tensor:
+                    noise_tensor: torch.TensorType=None) -> torch.TensorType:
         """
         Initializes a timesteps tensor, takes in a batch of 
         images and adds noise to them.

@@ -133,9 +133,3 @@ extern/mvtec_backup/
 # Other trash
 desktop.ini
 output/
-jupyter-lab.sh
-run_jupyter.sh
-.vscode/
-*.job
-*_tmp*/
-tmp/

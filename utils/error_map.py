@@ -10,11 +10,11 @@ class ErrorMapGenerator(ABC):
     An error map is a pixel-wise error between two corresponding tensors.
     """
 
-    def __call__(self, x: torch.Tensor, y: torch.Tensor, *args, **kwargs):
+    def __call__(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs):
         return self.generate(x, y, *args, **kwargs)
     
     @abstractmethod
-    def generate(self, x: torch.Tensor, y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+    def generate(self, x: torch.TensorType, y: torch.TensorType, *args, **kwargs) -> torch.Tensor:
         """
         Method with which the error map generator creates an error map.
 
@@ -67,10 +67,10 @@ class BatchFilteredSquaredError(ErrorMapGenerator):
         self._kernel_size = 7
         self._sigma = 1.4
 
-    def generate(self, x: torch.Tensor,
-                       y: torch.Tensor,
+    def generate(self, x: torch.TensorType,
+                       y: torch.TensorType,
                        kernel_type: str='gaussian',
-                       **kwargs) -> torch.Tensor:
+                       **kwargs) -> torch.TensorType:
         """
         Calculates the error map.
 

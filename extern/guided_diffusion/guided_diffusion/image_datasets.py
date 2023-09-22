@@ -1,6 +1,5 @@
 import math
 import random
-import torch
 
 from PIL import Image
 import blobfile as bf
@@ -9,89 +8,8 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 
-def get_dataloader(
-    *args,
-    data_dir,
-    batch_size,
-    image_size,
-    class_cond=False,
-    deterministic=False,
-    random_crop=False,
-    random_flip=True,
-    few_shot_count=None,
-    validation_size=0
-):
-    """
-    For a dataset, create a dataloader over (images, kwargs) pairs.
-
-    Each images is an NCHW float tensor, and the kwargs dict contains zero or
-    more keys, each of which map to a batched Tensor of their own.
-    The kwargs dict can be used for class labels, in which case the key is "y"
-    and the values are integer tensors of class labels.
-
-    :param data_dir: a dataset directory.
-    :param batch_size: the batch size of each returned pair.
-    :param image_size: the size to which images are resized.
-    :param class_cond: if True, include a "y" key in returned dicts for class
-                       label. If classes are not available and this is true, an
-                       exception will be raised.
-    :param deterministic: if True, yield results in a deterministic order.
-    :param random_crop: if True, randomly crop the images for augmentation.
-    :param random_flip: if True, randomly flip the images for augmentation.
-    :param few_shot_count: if not None, the trainer selects few_shot_count samples to train on.
-    :param validation_size: if not 0, also returns a validation data loader with validation_size
-                            samples from the same data_dir, but using disjoint samples.
-                            -- supported only for few shot training! --
-    """
-    if not data_dir:
-        raise ValueError("unspecified data directory")
-    
-    classes = None
-
-    if few_shot_count is not None:
-        all_files = _select_count_samples_from(data_dir, few_shot_count + validation_size, deterministic)
-    else:
-        all_files = _list_image_files_recursively(data_dir)
-
-    if class_cond:
-        # Assume classes are the first part of the filename,
-        # before an underscore.
-        class_names = [bf.basename(path).split("_")[0] for path in all_files]
-        sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-        classes = [sorted_classes[x] for x in class_names]
-
-    dataset = ImageDataset(
-        image_size,
-        all_files,
-        classes=classes,
-        shard=MPI.COMM_WORLD.Get_rank(),
-        num_shards=MPI.COMM_WORLD.Get_size(),
-        random_crop=random_crop,
-        random_flip=random_flip,
-    )
-
-    if validation_size:
-        assert isinstance(few_shot_count, int) and few_shot_count > 0, "Train-validation split is only supported in few-shot training."
-
-        train_set, val_set = torch.utils.data.random_split(dataset, [few_shot_count, validation_size])
-        train_loader = DataLoader(
-            train_set, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
-        )
-        val_loader = DataLoader(
-            val_set, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
-        )
-
-        return train_loader, val_loader
-
-    loader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=not deterministic, num_workers=1, drop_last=True
-    )
-
-    return loader, None
-
-
 def load_data(
-    *args,
+    *,
     data_dir,
     batch_size,
     image_size,
@@ -118,28 +36,36 @@ def load_data(
     :param random_crop: if True, randomly crop the images for augmentation.
     :param random_flip: if True, randomly flip the images for augmentation.
     """
-    loader, _ = get_dataloader(
-        *args,
-        data_dir=data_dir,
-        batch_size=batch_size,
-        image_size=image_size,
-        class_cond=class_cond,
-        deterministic=deterministic,
+    if not data_dir:
+        raise ValueError("unspecified data directory")
+    all_files = _list_image_files_recursively(data_dir)
+    classes = None
+    if class_cond:
+        # Assume classes are the first part of the filename,
+        # before an underscore.
+        class_names = [bf.basename(path).split("_")[0] for path in all_files]
+        sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+        classes = [sorted_classes[x] for x in class_names]
+    dataset = ImageDataset(
+        image_size,
+        all_files,
+        classes=classes,
+        shard=MPI.COMM_WORLD.Get_rank(),
+        num_shards=MPI.COMM_WORLD.Get_size(),
         random_crop=random_crop,
         random_flip=random_flip,
     )
-
+    if deterministic:
+        loader = DataLoader(
+            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
+        )
+    else:
+        loader = DataLoader(
+            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True
+        )
     while True:
         yield from loader
 
-
-def _select_count_samples_from(path: str, count: int, deterministic: bool):
-    image_files = _list_image_files_recursively(path)
-
-    if deterministic:
-        return image_files[:count]
-    else:
-        return random.sample(image_files, count)
 
 def _list_image_files_recursively(data_dir):
     results = []
