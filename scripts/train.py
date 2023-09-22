@@ -1,5 +1,9 @@
 """
 Train a diffusion model on images.
+
+Note: 
+This entire module is imported from extern/guided_diffusion/scripts/image_train.py
+after we decided to make some changes of our own to the training pipeline.
 """
 
 import argparse
