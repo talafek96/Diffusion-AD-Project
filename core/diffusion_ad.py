@@ -17,10 +17,10 @@ class DiffusionAD(BaseAlgo):
     anomaly_map_generator: ErrorMapGenerator
     anomaly_scorer: AnomalyScorer
 
-    def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, hparams, **kwargs):
+    def __init__(self, noiser, denoiser, anomaly_map_generator, anomaly_scorer, hparams):
         assert all(param in hparams for param in DIFFUSION_AD_REQUIRED_HPARAMS)
 
-        super().__init__(hparams, **kwargs)
+        super().__init__(hparams)
 
         if 'verbosity' not in self.args:
             self.args.verbosity = 0
@@ -34,19 +34,19 @@ class DiffusionAD(BaseAlgo):
         self.anomaly_scorer = anomaly_scorer
 
     def get_reconstructed_batch(self,
-                                img: torch.Tensor,
+                                img: torch.TensorType,
                                 noiser: Noiser,
                                 denoiser: Denoiser,
                                 num_timesteps: int,
                                 batch_size: int,
-                                interactive_print: bool = False) -> torch.Tensor:
+                                interactive_print: bool = False) -> torch.TensorType:
         """
         Using a noiser and a denoiser, adds noise for `num_timesteps` steps to the given img
         `batch_size` times, and reconstructs each noised image.
 
         Paramters:
         ----------
-        `img` : torch.Tensor (C, H, W)
+        `img` : torch.TensorType (C, H, W)
             An image stored as a tensor.
         
         `noiser` : Noiser
@@ -99,8 +99,8 @@ class DiffusionAD(BaseAlgo):
         return reconstructed_batch
 
     def evaluate_anomaly(self,
-                         img: torch.Tensor,
-                         reconstructed_batch: torch.Tensor,
+                         img: torch.TensorType,
+                         reconstructed_batch: torch.TensorType,
                          error_map_gen: ErrorMapGenerator,
                          anomaly_scorer: AnomalyScorer) -> Tuple[torch.Tensor, float]:
         """
