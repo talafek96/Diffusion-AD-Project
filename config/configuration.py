@@ -23,7 +23,7 @@ DEFAULT_ROOT_OUTPUT_DIR = os.path.abspath(os.path.join(__file__, '..', '..', _DE
 DEFAULT_CSV_DATA_PATH = os.path.abspath(os.path.join(DEFAULT_ROOT_OUTPUT_DIR, _DEFAULT_RESULTS_CSV))
 
 # CSV Columns
-DEFAULT_RESULTS_COLUMNS = ["category", "category_type", "img_auc", "pixel_auc"]
+DEFAULT_RESULTS_COLUMNS = ["category", "category_type", "model_name", "img_auc", "pixel_auc"]
 
 # Public datastructures
 DIFFUSION_AD_REQUIRED_HPARAMS = [

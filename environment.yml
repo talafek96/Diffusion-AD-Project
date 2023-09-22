@@ -26,5 +26,6 @@ dependencies:
   - tqdm
   - pandas
   - scikit-learn
+  - filelock
   - pip:
     - pytorch-lightning==1.9.4

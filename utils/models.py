@@ -1,5 +1,5 @@
 import os
-import re
+from pathlib import Path
 import torch
 if __name__ == '__main__':
   import import_fixer
@@ -62,26 +62,39 @@ class ModelLoader:
         )
         self.default_args.update(model_and_diffusion_defaults())
 
-    def get_model(self, model_name: str, extra_args: dict=None, to_compile: bool=True) -> Tuple[UNetModel, GaussianDiffusion]:
+    def get_model(self,
+                  model_name: str,
+                  extra_args: dict=None,
+                  to_compile: bool=True,
+                  path: str=None) -> Tuple[UNetModel, GaussianDiffusion]:
         """
-        Creates UNetModel and GaussianDiffusion objects, and loads the trained model from the disk.
+        Creates and loads a trained UNetModel and GaussianDiffusion objects based on the specified model name.
+
+        Args:
+            model_name (str): The name of the model to load.
+            extra_args (dict, optional): Additional arguments to be passed to create the model and diffusion objects. Defaults to None.
+            to_compile (bool, optional): Flag indicating whether to compile the model. Defaults to True. (if supported)
+            path (str, optional): The path to the trained model .pt file. Defaults to None.
+
+        Returns:
+            Tuple[UNetModel, GaussianDiffusion]: A tuple containing the loaded UNetModel and GaussianDiffusion objects.
         """
         model_name = model_name.strip().lower()  # Normalize string to convention
 
         if model_name not in type(self).MODEL_TO_ARG_SPECIFICS.keys():
             raise RuntimeError(
                 f'Model name "{model_name}" not supported.\nChoose one of: {list(type(self).MODEL_TO_ARG_SPECIFICS.keys())}')
-        
-        if not os.path.exists(type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']):
+        model_path = path if path is not None and path != '' else type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']
+        if not os.path.exists(model_path):
             raise RuntimeError(
-                f'The trained model .pt file was not found in:\n{type(self).MODEL_TO_ARG_SPECIFICS[model_name]["model_path"]}')
+                f'The trained model .pt file was not found in:\n{model_path}')
 
         # Calculate flags:
         model_diff_flags = self.default_args.copy()
         model_diff_flags.update(
             type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_flags'])
         model_diff_flags.update(
-            {'model_path': type(self).MODEL_TO_ARG_SPECIFICS[model_name]['model_path']})
+            {'model_path': model_path})
         if extra_args is not None:
             model_diff_flags.update(extra_args)
 
@@ -106,6 +119,26 @@ class ModelLoader:
             pass  # Still unsupported :')
 
         return model, diffusion
+    
+    def get_model_name(self, model_name: str, path: str=None) -> str:
+        """
+        Returns the model name extracted from a given path if provided, otherwise returns the original model name.
+
+        Args:
+            model_name (str): The original model name.
+            path (str, optional): The path from which to extract the model name. Defaults to None.
+
+        Returns:
+            str: The extracted model name or the original model name if path is not provided.
+        """
+        if path is None:
+            if model_name not in type(self).MODEL_TO_ARG_SPECIFICS:
+                raise RuntimeError(f'Input model_name is {model_name} and not found inside the ModelLoader class configuration dictionary!')
+
+            return model_name
+
+        path_obj = Path(path)
+        return path_obj.stem
 
 
 if __name__ == '__main__':

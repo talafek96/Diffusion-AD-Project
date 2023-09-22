@@ -48,7 +48,8 @@ class TrainLoop:
         val_data=None,
         target: str=None,
         save_opt: bool=True,
-        save_ema: bool=True
+        save_ema: bool=True,
+        steps_limit: int=0
     ):
         self.model = model
         self.diffusion = diffusion
@@ -73,6 +74,7 @@ class TrainLoop:
         self.target = target
         self.save_opt = save_opt
         self.save_ema = save_ema
+        self.steps_limit = steps_limit
 
         self.step = 0
         self.resume_step = 0
@@ -184,10 +186,11 @@ class TrainLoop:
         mean_loss = th.tensor(all_losses).mean().item()
         logger.log(f"\tMean loss on validation data: {mean_loss:.6f}")
 
-        recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
-        self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
-                              dump_path=recon_dump_path,
-                              target=self.target)
+        with th.no_grad():
+            recon_dump_path = os.path.join(logger.get_dir(), "validation_imgs", f"recon_imgs_step_{self.step + self.resume_step}.jpg")
+            self._log_batch_recon(batch=th.cat(tensors=[data[0] for data in self.val_data], dim=0).to(dist_util.dev()),
+                                  dump_path=recon_dump_path,
+                                  target=self.target)
 
     def _log_batch_recon(self, batch: th.Tensor | List[th.Tensor], dump_path: str, target: str):
         """
@@ -246,8 +249,11 @@ class TrainLoop:
 
     def run_loop(self):
         while (
-            not self.lr_anneal_steps
-            or self.step + self.resume_step < self.lr_anneal_steps
+            (not self.lr_anneal_steps
+            or self.step + self.resume_step < self.lr_anneal_steps)
+            and
+            (self.steps_limit <= 0
+             or self.step + self.resume_step < self.steps_limit)
         ):
             batch, cond = next(self.data)
             self.run_step(batch, cond)
