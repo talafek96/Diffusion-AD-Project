@@ -139,3 +139,7 @@ run_jupyter.sh
 *.job
 *_tmp*/
 tmp/
+
+# Spectral resources
+extern/spectral_resources/*rf
+extern/spectral_resources/*rf.hdr
