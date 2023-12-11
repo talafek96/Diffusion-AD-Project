@@ -143,3 +143,5 @@ tmp/
 # Spectral resources
 extern/spectral_resources/*rf
 extern/spectral_resources/*rf.hdr
+extern/ndvi_resources/*BIL
+extern/ndvi_resources/*BIL.hdr
