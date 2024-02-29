@@ -52,9 +52,7 @@ def read_bands_of_HDR_as_tensor(list_of_bands: List, image_path: str):
     return th.from_numpy(rgb)
 
 
-def get_sliced_bands_of_HDR_as_256x256_tensor(list_of_bands: List, image_path: str, center: Tuple[int, int]):
-    im_tensor = read_bands_of_HDR_as_tensor(list_of_bands, image_path)
-
+def get_sliced_bands_of_HDR_as_256x256_tensor(im_tensor: th.Tensor, center: Tuple[int, int]):
     size_y, size_x, num_channels = im_tensor.shape[0], im_tensor.shape[1], im_tensor.shape[2]
     print(f"get_sliced_bands_of_HDR_as_256x256_tensor im_tensor.shape = {im_tensor.shape}")  #TODO: DELETE
 
@@ -155,9 +153,11 @@ def stitch_segments(segments, size_x, size_y):
                 min_col, max_col = size_x - 256, size_x
             else:
                 min_col, max_col = col_index * 256, (col_index+1) * 256
-                
-            assert max_row - min_row == 256
+
+            assert max_row - min_row == 256 
             assert max_col - min_col == 256
+            assert max_col < size_x
+            assert max_row < size_y
             # "[:" to select all channels
             # from min_row to max_row
             # and from min_col to max_col
@@ -169,9 +169,15 @@ def stitch_segments(segments, size_x, size_y):
 def main():
     HDR_swir = envi.open(HDR_PATH_SWIR, IMAGE_PATH_SWIR)
     # im_swir_rgb = show_img(HDR_swir)  # differnt band in each chunnel
-    im_swir_single_band = show_bands([10, 20, 40], HDR_swir)# same band in each chunnel
-    print(get_sliced_bands_of_HDR_as_256x256_tensor([1, 10, 20], IMAGE_PATH_SWIR, (460, 220)))
-    plt.imshow(get_sliced_bands_of_HDR_as_256x256_tensor([1, 10, 20], IMAGE_PATH_SWIR, (460, 220)))
+    bands = [10, 20, 40]  # band as in bandwidth index
+    spectral_im_path = IMAGE_PATH_SWIR
+
+    im_swir_single_band = show_bands(bands, HDR_swir)  # same band in each chunnel
+
+    spectral_im_tensor = read_bands_of_HDR_as_tensor(bands, spectral_im_path)
+
+    print(get_sliced_bands_of_HDR_as_256x256_tensor(spectral_im_tensor, (460, 220)))
+    plt.imshow(get_sliced_bands_of_HDR_as_256x256_tensor(spectral_im_tensor, (460, 220)))
     plt.show()
 
 
