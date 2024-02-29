@@ -29,7 +29,6 @@ def show_bands(list_of_bands, HDR):
                         HDR.read_band(list_of_bands[2])], axis=-1)
         debug = th.from_numpy(rgb)
     # rgb = rgb / rgb.max() * 1.5
-    print(rgb.shape)  # TODO: DELETE
 
     figure = plt.figure()
     figure.canvas.manager.set_window_title("RGB Image")
@@ -54,7 +53,6 @@ def read_bands_of_HDR_as_tensor(list_of_bands: List, image_path: str):
 
 def get_sliced_bands_of_HDR_as_256x256_tensor(im_tensor: th.Tensor, center: Tuple[int, int]):
     size_y, size_x, num_channels = im_tensor.shape[0], im_tensor.shape[1], im_tensor.shape[2]
-    print(f"get_sliced_bands_of_HDR_as_256x256_tensor im_tensor.shape = {im_tensor.shape}")  #TODO: DELETE
 
     assert num_channels == 3
 
@@ -114,7 +112,7 @@ with shape [3, 256, 256]
 >>> size_y = 768   # Original image height
 >>> stitched_result = stitch_segments(segments, size_x, size_y)
 """
-def stitch_segments(segments, size_x, size_y):
+def stitch_256x256_segments(segments, size_x, size_y):
     """
     Stitches image segments back into the original tensor.
 
@@ -134,10 +132,6 @@ def stitch_segments(segments, size_x, size_y):
     num_segment_rows = int(np.ceil(size_y / 256.0))
 
     # # Iterate over segments and copy content into the stitched image
-    # for i in range(num_segments_x):
-    #     for j in range(num_segments_y):
-    #         segment = segments[i * num_segments_y + j]
-    #         stitched_image[:, i * 256 : (i + 1) * 256, j * 256 : (j + 1) * 256] = segment
     for row_index in range(num_segment_rows):
         for col_index in range(num_segment_columns):
             segment = segments[col_index * num_segment_rows + row_index]
@@ -156,8 +150,8 @@ def stitch_segments(segments, size_x, size_y):
 
             assert max_row - min_row == 256 
             assert max_col - min_col == 256
-            assert max_col < size_x
-            assert max_row < size_y
+            assert max_col <= size_x
+            assert max_row <= size_y
             # "[:" to select all channels
             # from min_row to max_row
             # and from min_col to max_col

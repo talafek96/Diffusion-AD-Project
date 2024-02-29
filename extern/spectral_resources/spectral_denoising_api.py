@@ -13,7 +13,7 @@ from utils.error_map import ErrorMapGenerator, BatchFilteredSquaredError
 from utils.anomaly_scorer import AnomalyScorer, MaxValueAnomalyScorer
 from extern.guided_diffusion.guided_diffusion import gaussian_diffusion as gd
 from extern.spectral_resources.load_and_crop_img import get_sliced_bands_of_HDR_as_256x256_tensor, \
-    get_next_center_point_of_spectral_image, read_bands_of_HDR_as_tensor, stitch_segments, \
+    get_next_center_point_of_spectral_image, read_bands_of_HDR_as_tensor, stitch_256x256_segments, \
     IMAGE_PATH_SWIR
 
 
@@ -130,7 +130,6 @@ class SpectralAnomalyMarker:
                 plt.imshow(reconstructed_image_cpu.permute(1, 2, 0))
                 plt.show()
 
-            # return reconstructed_image.squeeze(0).cpu()
             return reconstructed_image_cpu
 
     def show_heatmap(self, heat_map_t, with_side_by_side=False, original=None, origin_t=None):
@@ -139,7 +138,8 @@ class SpectralAnomalyMarker:
                 print("show_heatmap with_side_by_side requires an original tensor")
             plt.subplot(1, 2, 1)
             plt.imshow(original)
-        visual_clip_min = heat_map_t.min().item() * VISUAL_CLIP_MIN_FACTOR
+        # visual_clip_min = heat_map_t.min().item() * VISUAL_CLIP_MIN_FACTOR
+        visual_clip_min = heat_map_t.max().item() * 0.3
         visual_clip_max = heat_map_t.max().item() * VISUAL_CLIP_MAX_FACTOR
         
         plt.subplot(1, 2, 2)
@@ -163,44 +163,53 @@ class SpectralAnomalyMarker:
         return anomaly_map, anomaly_score
 
 
-IS_QUIET_TESTS = True
+# Unit Tests:
+
+
+IS_QUIET_TESTS = True  # When False: displays every reconstruction in the batch synchrinically
+TEST_BANDS = [10, 20, 40]
+TEST_CENTER = (460, 220)
+TEST_TIMESTEPS = 100
+TEST_BATCH_SIZE = 16
 
 
 def test_diffusion(anomaly_marker: SpectralAnomalyMarker):
-    list_of_bands = [10, 20, 40]
+    list_of_bands = TEST_BANDS
     spectral_image_path = IMAGE_PATH_SWIR
-    selected_test_center = (460, 220)
+    selected_test_center = TEST_CENTER
     spectral_im_tensor = read_bands_of_HDR_as_tensor(list_of_bands, spectral_image_path)
 
     log('loading selected bands to tensor...')
     input_t = get_sliced_bands_of_HDR_as_256x256_tensor(spectral_im_tensor, selected_test_center)
     log('SUCCESS.')
     
-    heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, 150, 
-                                                           should_display_progress=not IS_QUIET_TESTS)
+    heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, TEST_TIMESTEPS, 
+                                                           should_display_progress=not IS_QUIET_TESTS,
+                                                           reconstruct_batch_size=TEST_BATCH_SIZE)
     print(f"anomaly_score: {anomaly_score}")
     anomaly_marker.show_heatmap(heatmap)
 
 
 def test_direct(anomaly_marker: SpectralAnomalyMarker):
-    list_of_bands = [10, 20, 40]
+    list_of_bands = TEST_BANDS
     spectral_image_path = IMAGE_PATH_SWIR
-    selected_test_center = (460, 220)
+    selected_test_center = TEST_CENTER
     spectral_im_tensor = read_bands_of_HDR_as_tensor(list_of_bands, spectral_image_path)
 
     log('loading selected bands to tensor...')
     input_t = get_sliced_bands_of_HDR_as_256x256_tensor(spectral_im_tensor, selected_test_center)
     log('SUCCESS.')
 
-    heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, 150, 
+    heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, TEST_TIMESTEPS, 
                                                            should_display_progress=not IS_QUIET_TESTS, 
-                                                           should_use_direct_denoiser=True)
+                                                           should_use_direct_denoiser=True,
+                                                           reconstruct_batch_size=TEST_BATCH_SIZE)
     print(f"anomaly_score: {anomaly_score}")
     anomaly_marker.show_heatmap(heatmap)
 
 
 def test_segment_iterator_direct(anomaly_marker: SpectralAnomalyMarker):
-    list_of_bands = [10, 20, 40]
+    list_of_bands = TEST_BANDS
     spectral_image_path = IMAGE_PATH_SWIR
     spectral_im_tensor = read_bands_of_HDR_as_tensor(list_of_bands, spectral_image_path)
 
@@ -213,23 +222,25 @@ def test_segment_iterator_direct(anomaly_marker: SpectralAnomalyMarker):
                                                             current_center)
         log('SUCCESS.')
 
-        heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, 
+        heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, TEST_TIMESTEPS,
                                                                should_display_progress=not IS_QUIET_TESTS, 
-                                                               should_use_direct_denoiser=True)
+                                                               should_use_direct_denoiser=True,
+                                                               reconstruct_batch_size=TEST_BATCH_SIZE)
         heatmaps.append(heatmap)
         anomaly_scores.append(anomaly_score)
     
-    stitched_heatmap = stitch_segments(heatmaps, 
-                                       size_x=spectral_im_tensor.shape[0], 
-                                       size_y=spectral_im_tensor.shape[1])  # weird... i know
+    stitched_heatmap = stitch_256x256_segments(heatmaps, 
+                                               size_x=spectral_im_tensor.shape[0], 
+                                               size_y=spectral_im_tensor.shape[1])
     
     # TODO: something better and quieter like to files
     print(f"summarrized anomaly_score's: {sum(anomaly_scores)}")  
-    anomaly_marker.show_heatmap(stitched_heatmap, with_side_by_side=True, original=spectral_im_tensor) 
+    anomaly_marker.show_heatmap(stitched_heatmap, with_side_by_side=True, 
+                                original=spectral_im_tensor) 
 
 
 def test_segment_iterator_diffuse(anomaly_marker: SpectralAnomalyMarker):
-    list_of_bands = [10, 20, 40]
+    list_of_bands = TEST_BANDS
     spectral_image_path = IMAGE_PATH_SWIR
     spectral_im_tensor = read_bands_of_HDR_as_tensor(list_of_bands, spectral_image_path)
 
@@ -242,24 +253,29 @@ def test_segment_iterator_diffuse(anomaly_marker: SpectralAnomalyMarker):
                                                             current_center)
         log('SUCCESS.')
 
-        heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, 
-                                                               should_display_progress=not IS_QUIET_TESTS)
+        heatmap, anomaly_score = anomaly_marker.find_anomalies(input_t, TEST_TIMESTEPS,
+                                                               should_display_progress=not IS_QUIET_TESTS,
+                                                               reconstruct_batch_size=TEST_BATCH_SIZE)
         heatmaps.append(heatmap)
         anomaly_scores.append(anomaly_score)
     
-    stitched_heatmap = stitch_segments(heatmaps, 
-                                       size_x=spectral_im_tensor.shape[0], 
-                                       size_y=spectral_im_tensor.shape[1])  # weird... i know
+    stitched_heatmap = stitch_256x256_segments(heatmaps, 
+                                               size_x=spectral_im_tensor.shape[0], 
+                                               size_y=spectral_im_tensor.shape[1])
     
     # TODO: something better and quieter like to files
     print(f"summarrized anomaly_score's: {sum(anomaly_scores)}")  
-    anomaly_marker.show_heatmap(stitched_heatmap, with_side_by_side=True, original=spectral_im_tensor) 
+    anomaly_marker.show_heatmap(stitched_heatmap, with_side_by_side=True, 
+                                original=spectral_im_tensor) 
 
 
 def run_tests():
+    """
+    Every test is an example of how to use the SpectralAnomalyMarker
+    """
     anomaly_marker = SpectralAnomalyMarker()
-    #test_segment_iterator_direct(anomaly_marker)
-    test_segment_iterator_diffuse(anomaly_marker)
+    test_segment_iterator_direct(anomaly_marker)
+    # test_segment_iterator_diffuse(anomaly_marker)
     # test_direct(anomaly_marker)
     # test_diffusion(anomaly_marker)
 
