@@ -43,7 +43,8 @@ def read_bands_of_HDR_as_tensor(list_of_bands: List, image_path: str):
     HDR_swir = envi.open(header_path, image_path)
     
     if len(list_of_bands) == 1:
-        rgb = np.array(HDR_swir.read_band(list_of_bands[0]))
+        rgb = np.stack([HDR_swir.read_band(list_of_bands[0]), HDR_swir.read_band(list_of_bands[0]),
+                        HDR_swir.read_band(list_of_bands[0])], axis=-1)
     else:
         rgb = np.stack([HDR_swir.read_band(list_of_bands[0]), HDR_swir.read_band(list_of_bands[1]),
                         HDR_swir.read_band(list_of_bands[2])], axis=-1)
@@ -52,22 +53,26 @@ def read_bands_of_HDR_as_tensor(list_of_bands: List, image_path: str):
 
 
 def get_sliced_bands_of_HDR_as_256x256_tensor(im_tensor: th.Tensor, center: Tuple[int, int]):
-    size_y, size_x, num_channels = im_tensor.shape[0], im_tensor.shape[1], im_tensor.shape[2]
+    def get_rectangle_indices(center: Tuple[int, int]) -> Tuple[int, int, int, int]:
+        center_x, center_y = center
 
+        lower_x_slice = int(center_x - 256/2)
+        upper_x_slice = int(center_x + 256/2)
+        lower_y_slice = int(center_y - 256/2)
+        upper_y_slice = int(center_y + 256/2)
+
+        return lower_x_slice, upper_x_slice, lower_y_slice, upper_y_slice
+
+    size_y, size_x, num_channels = im_tensor.shape[0], im_tensor.shape[1], im_tensor.shape[2]
     assert num_channels == 3
 
-    center_x, center_y = center
+    lower_x_slice, upper_x_slice, lower_y_slice, upper_y_slice = \
+        get_rectangle_indices(center)
     
-    lower_x_slice = int(center_x - 256/2)
-    upper_x_slice = int(center_x + 256/2)
-
-    lower_y_slice = int(center_y - 256/2)
-    upper_y_slice = int(center_y + 256/2)
-
     if lower_x_slice < 0 or upper_x_slice > size_x or lower_y_slice < 0 or upper_y_slice > size_y:
         raise OutOfBoundsError(f"You have to select a center point that is at least 256/2 pixels from the bounds of the image\n\
-                               given (center_x, center_y) = {(center_x, center_y)}, (size_x, size_y) = {(size_x, size_y)}")
-    
+                               given (center_x, center_y) = {(center[0], center[1])}, (size_x, size_y) = {(size_x, size_y)}")
+
     sliced_im_tensor = im_tensor[lower_y_slice: upper_y_slice, lower_x_slice: upper_x_slice, :]
 
     return sliced_im_tensor
@@ -104,17 +109,15 @@ def get_next_center_point_of_spectral_image(spectral_im_tensor: th.Tensor):
             yield (current_center_x, current_center_y)
 
 
-# # Example usage:
-# # Assuming 'segments' is a list of torch.Tensor segments
-"""
-with shape [3, 256, 256]
->>> size_x = 1024  # Original image width
->>> size_y = 768   # Original image height
->>> stitched_result = stitch_segments(segments, size_x, size_y)
-"""
 def stitch_256x256_segments(segments, size_x, size_y):
     """
     Stitches image segments back into the original tensor.
+
+    Example usage:
+    Assuming 'segments' is a list of torch.Tensor segments with shape [3, 256, 256]:
+    >>> size_x = 1024  # Original image width
+    >>> size_y = 768   # Original image height
+    >>> stitched_result = stitch_segments(segments, size_x, size_y)
 
     Args:
         segments (list of torch.Tensor): List of image segments (shape: [3, 256, 256]).
@@ -124,6 +127,8 @@ def stitch_256x256_segments(segments, size_x, size_y):
     Returns:
         torch.Tensor: Stitched image tensor (shape: [3, size_x, size_y]).
     """
+    # TODO: Assert len of segments matches expected num cols and rows
+
     # Initialize an empty tensor for the stitched image
     stitched_image = th.zeros(size_x, size_y)
 
@@ -131,10 +136,15 @@ def stitch_256x256_segments(segments, size_x, size_y):
     num_segment_columns = int(np.ceil(size_x / 256.0))
     num_segment_rows = int(np.ceil(size_y / 256.0))
 
+    # Transform the list into a tensor of segments shaped like a matrix of segments
+    segments = th.stack(segments)
+    seg_shape = segments.shape[1:]
+    segments = segments.reshape((num_segment_columns, num_segment_rows, *seg_shape))
+
     # # Iterate over segments and copy content into the stitched image
     for row_index in range(num_segment_rows):
         for col_index in range(num_segment_columns):
-            segment = segments[col_index * num_segment_rows + row_index]
+            segment = segments[col_index, row_index]
 
             # If this is the last row
             if row_index == num_segment_rows - 1:
@@ -148,11 +158,10 @@ def stitch_256x256_segments(segments, size_x, size_y):
             else:
                 min_col, max_col = col_index * 256, (col_index+1) * 256
 
-            assert max_row - min_row == 256 
-            assert max_col - min_col == 256
-            assert max_col <= size_x
-            assert max_row <= size_y
-            # "[:" to select all channels
+            assert max_row - min_row == 256, "Should never happen. you broke something in stitch_256x256_segments()"
+            assert max_col - min_col == 256, "Should never happen. you broke something in stitch_256x256_segments()"
+            assert max_col <= size_x, "Should never happen, means you iterate the segments wrongly."
+            assert max_row <= size_y, "Should never happen, means you iterate the segments wrongly."
             # from min_row to max_row
             # and from min_col to max_col
             stitched_image[min_col : max_col, min_row : max_row] = segment

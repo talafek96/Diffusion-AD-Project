@@ -32,13 +32,6 @@ class SpectralAnomalyMarker:
 
     def __init__(self) -> None:
         self.is_model_loaded = False
-        pass  # TODO:
-
-    def prepare_input_for_model(self, improper_input): #  TODO: rename param
-        permutated_bands = improper_input.permute(2, 0, 1).to('cuda')
-        prepared_input_as_batch = permutated_bands.unsqueeze(0)
-
-        return prepared_input_as_batch
 
     def load_model(self):
         model_loader = ModelLoader()
@@ -47,8 +40,15 @@ class SpectralAnomalyMarker:
             self.unet_model, self.guided_diffusion = model_loader.get_model('256x256_uncond', path='models/256x256_diffusion_uncond.pt')
             self.is_model_loaded = True
 
-    def find_anomalies(self, input_t, num_noising_timesteps=100, reconstruct_batch_size=16, 
-                       should_use_direct_denoiser=False, should_display_progress=True):
+    def prepare_input_for_model(self, unprepared_input: torch.Tensor): #  TODO: rename param?
+        permutated_bands = unprepared_input.permute(2, 0, 1).to('cuda')
+        prepared_input_as_batch = permutated_bands.unsqueeze(0)
+
+        return prepared_input_as_batch
+
+    def find_anomalies(self, input_t: torch.Tensor, num_noising_timesteps: int=100, 
+                       reconstruct_batch_size: int=16, should_use_direct_denoiser: bool=False, 
+                       should_display_progress: bool=True):
         """
         @param selected_bands: list of 3 integers indicating the selected channels to process
         @param image_path: path to spectral image
@@ -108,8 +108,9 @@ class SpectralAnomalyMarker:
 
         return anomaly_map, anomaly_score
 
-    def process_image(self, reconstruct_batch_size, index_in_batch, current_timesteps, input_t, 
-                      noiser, denoiser, should_display_progress):
+    def process_image(self, reconstruct_batch_size: int, index_in_batch: int, 
+                      current_timesteps: int, input_t: torch.Tensor, 
+                      noiser: Noiser, denoiser: Denoiser, should_display_progress: bool):
         log('applying noise...')
         noised_image = noiser.apply_noise(input_t.unsqueeze(0), current_timesteps).squeeze(0)
         log(f'SUCCESS. {index_in_batch + 1}/{reconstruct_batch_size}')
@@ -132,7 +133,8 @@ class SpectralAnomalyMarker:
 
             return reconstructed_image_cpu
 
-    def show_heatmap(self, heat_map_t, with_side_by_side=False, original=None, origin_t=None):
+    def show_heatmap(self, heat_map_t: torch.Tensor, with_side_by_side: bool=False, 
+                     original: torch.Tensor=None):
         if with_side_by_side:
             if original == None:
                 print("show_heatmap with_side_by_side requires an original tensor")
