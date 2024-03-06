@@ -27,5 +27,6 @@ dependencies:
   - pandas
   - scikit-learn
   - filelock
+  - spectral
   - pip:
     - pytorch-lightning==1.9.4
