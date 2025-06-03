@@ -82,7 +82,11 @@
             <li>
               Provide easy-to-use training and benchmarking scripts for the MVTec AD dataset.
             </li>
+              <li>Support few-shot experiments with <code>--few_shot_count</code> for data-scarce tasks.</li>
+              <li>Modular utilities enable custom noise schedules and scoring strategies.</li>
+              <li>Document results in this static website with visuals and tables.</li>
           </ul>
+          <p class="mt-3">The project relies on the MVTec AD dataset and can train from scratch or fine-tune pretrained diffusion models. Setup instructions are provided in the README.</p>
         </div>
       </div>
     </div>
@@ -96,6 +100,7 @@
           <br />
           <div>
             <p class="lead">Anomaly Detection Pipeline</p>
+              <p>Each input is reconstructed using a diffusion model. Differences between the original and reconstruction reveal defects.</p>
             <ul>
               <li>
                 Add random gaussian noise to an image.
@@ -108,6 +113,7 @@
                 reconstructed image and use the result to determine an anomality score.
               </li>
             </ul>
+              <p>Our utilities generate pixel-level error maps and aggregate scores for easy comparison across categories.</p>
           </div>
         </div>
       </div>
@@ -120,15 +126,15 @@
         <div class="col-lg-8">
           <h2>Testing</h2>
           <br />
-          <p>
-            The repository provides a benchmark script that evaluates several MVTec categories automatically.
-            Below is an example from the "hazelnut" class showing reconstructed images and the produced anomaly heatmap.
+            <p>
+              Use <code>scripts/train.py</code> to train the diffusion model. The <code>--few_shot_count</code> flag limits the number of training images and <code>--val_size</code> creates a validation split. Evaluation is performed with <code>scripts/benchmark_ad.py</code> which writes results to CSV.
+            </p>
+            <p>Below is an example from the "hazelnut" class showing reconstructed images and the produced anomaly heatmap.</p>
             <div class="card" style="width: 60rem">
               <img src="images/testing_hazelnut_cut.png" class="card-img-top" alt="testing" />
             </div>
             <br />
-            Distinct marks on the heatmap highlight the damaged region while background areas remain mostly clean.
-          </p>
+            <p>Distinct marks on the heatmap highlight the damaged region while background areas remain mostly clean.</p>
         </div>
       </div>
     </div>
@@ -144,6 +150,7 @@
             <li>Implemented a few‑shot training pipeline for diffusion models.</li>
             <li>Created an automated benchmarking script covering multiple MVTec categories.</li>
             <li>Designed modular utilities for noise injection, reconstruction and anomaly scoring.</li>
+              <li>Large images managed with Git LFS to keep the repository lightweight.</li>
             <li>Results surpass a recently published baseline ("MAEDAY") as shown below.</li>
           </ul>
           <p>
