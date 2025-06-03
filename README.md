@@ -1,37 +1,49 @@
-# Introduction
+# Diffusion-AD Project
 
-**Anomaly-detection (AD)**: is a task where the goal is to find anomalous samples at inference time while during training, only positive (good) samples are given.  
+This repository explores **anomaly detection** using *denoising diffusion models* (DDMs). The codebase contains a modular pipeline for training diffusion models, running anomaly detection experiments and benchmarking on the [MVTec AD dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad).
 
-**Denoising Diffusion Model (DDM)**: DDMs are models trained to recover images from noisy versions of the same image; they have recently been proven useful for many tasks (with a focus on generative models).  
+## Features
+- **Few‑shot training** – train a diffusion model on a small number of images using `scripts/train.py`.
+- **Automated benchmarking** – evaluate anomaly detection results for multiple categories with `scripts/benchmark_ad.py`.
+- **Modular components** – noise/denoise wrappers, error‑map generators and anomaly scorers located under `utils/` and `core/`.
+- **Persistent results** – experiment results are stored as CSV files under `output/` for easy comparison.
 
+## Setup
+1. Create a Conda environment and install dependencies:
+   ```bash
+   conda env create -f environment.yml
+   conda activate diffusion-ad
+   ```
+2. Download the 256×256 unconditional diffusion model from [OpenAI](https://openaipublic.blob.core.windows.net/diffusion/jul-2021/256x256_diffusion_uncond.pt) and place it at `models/256x256_diffusion_uncond.pt`.
+3. Place the MVTec dataset under `extern/mvtec/` (folder should contain sub‑directories such as `bottle`, `cable`, …).
 
-## Our Objective
+## Running Experiments
+### Few‑shot Training
+Train a model on a small subset of images:
+```bash
+python scripts/train.py --data_dir extern/mvtec --target bottle --few_shot_count 10 --val_size 2
+```
+The script creates PyTorch Lightning logs under `output/train_logs/`.
 
-**Goal:** In this project we will attempt to develop a POC for detecting anomalies in images based on the ability or inability of a DDM to reconstruct them.  
+### Benchmarking
+Run anomaly detection on selected categories using a pretrained model:
+```bash
+python scripts/benchmark_ad.py --model models/256x256_diffusion_uncond.pt \
+    --targets bottle cable carpet --reconstruction-batch-size 16
+```
+Results are written to `output/results.csv` and per‑category folders under `output/`.
 
-**Example:** Inspection of a product in a factory may take images of all products on the product line. The goal may be to find scratched or damaged products, while during training no such samples were given.  
+## Results
+Example combined results can be found in [`results/results_combined.csv`](results/results_combined.csv). A shortened excerpt:
+```csv
+category,category_type,img_auc,pixel_auc
+bottle,object,0.88,0.92312313
+cable,object,0.56,0.855968617
+capsule,object,0.76,0.9547285
+...
+```
 
-![image](https://user-images.githubusercontent.com/63167980/202312808-85b91816-6e06-4660-a8d9-b3329cd439b6.png)
+A static HTML site summarising the methodology and achievements is available in the [`site/`](site) directory.
 
-
-## High Level Methodology
-
-- Add random gaussian noise to an image.
-
-- Denoise the noised image using a DDM and reconstruct the image.
-
-- Calculate the “difference” between the original image and the reconstructed image and use the result to determine an anomality score.
-
-
-# Setup and Execution
-
-Download the 256x256 class unconditional model from here: [256x256_diffusion_uncond.pt](https://openaipublic.blob.core.windows.net/diffusion/jul-2021/256x256_diffusion_uncond.pt)
-
-Place it in the path `models/256x256x_diffusion_uncond.pt` (relative path from the root directory of the repository).
-
-## Execution
-Run all the cells of `main_experiment.ipynb`.</br>You can see the output in the following paths:
-- `output/` - The root folder of the outputs. Everything will be in here.
-- `output/results.csv` - A csv table containing the columns `category | category_type | img_auc | pixel_auc` with the final results per category.
-Will have the results of the **last** execution for each class. Can optimize and set `overwrite = False` in `main_experiment.ipynb` in the proper places and that will make sure that only categories that are not already present in the csv will be evaluated.
-- `output/<category_name>/lightning_logs/` - Can find many output files here. Will have a version per evaluation performed. Each version will have a `sample` sub-directory inside of it that will included visualizations.
+## Acknowledgements
+This project is based on the guided diffusion implementation and extends it for anomaly detection tasks.
